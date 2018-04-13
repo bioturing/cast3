@@ -1,4 +1,5 @@
 <img src="static/cast3_logo.png" width="300" title="CAST3">
+
 # Cloud Alignment Simulation Tool
 
 CAST3 simulates whole genome sequencing data in read-cloud techonology and evaluates the alignment result of such data.
@@ -10,8 +11,10 @@ number of barcodes, and read-length.
 
 ## Installation
 
+```
 git clone https://github.com/bioturing/cast3
 ./build.sh
+```
 
 ## Usage
 

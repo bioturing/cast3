@@ -52,6 +52,9 @@ CAST3 produces two fastq files that include the truth positions of each read in 
 . User can also investigate the structural variants that spanned by each read by the encoded read name.
 
 Example: 
-@4:56907618:135:NOR|4:56907964:151:NOR/1: Read 1 from a read pair that span a normal region, which does not include any structural variant.
+
+@4:56907618:135:NOR|4:56907964:151:NOR/1: 
+
+Read 1 from a read pair that span a normal region, which does not include any structural variant.
 This read should be aligned at the position 56907618, chromosome 4
 

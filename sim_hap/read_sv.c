@@ -1,55 +1,72 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
-
 #include "read_sv.h"
 
-static struct seg_t retros[MAX_RETROS];
-static int NUMBER_RETROS = 0;
+static struct seg_t *retros;
+static int n_retro;
+
+static int8_t nt4_table[256] = {
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  3, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  3, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
+};
+
+static char nt_char[4] = "ACGT";
 
 /* Read structural variant objects from high confident structural variant file
  * then return number of SVs that have been read
-*/
-void read_sv(FILE *fp, struct sv_t *svs, int *n)
+ */
+void read_sv(FILE *fp, struct sv_t **svs, int *n_sv, struct genome_t *genome)
 {
-	size_t l;
-	char *s = malloc(2*BUFFER_SIZE);
-	char alt[10], ref[BUFFER_SIZE], name[NAME_BUFFER], chr[3];
-	struct sv_t *sv = svs;
-	extern char *chroms[];
+	size_t len = 0;
+	char *s = NULL, alt[1024], ref[1024], name[1024], chr[1024];
+	int rc;
 
-	while (getline(&s, &l, fp) != EOF){
-		sscanf(s, "%s%d%d%s%s%s%s",
-		       chr, &sv->start, &sv->end, name, ref, alt, sv->type);
-		CHROM_IDX(chr, sv->chr);
-		// convert from 1-based coordinate system in VCF file into 0-based 
-		// coordinate system
-		--sv->start;
-		--sv->end;
-		// preprocess some structural variants
-		// get number of duplication
-		if (!strcmp(sv->type, "CNV") || !strcmp(sv->type, "DUP")) {
-			sv->cnv = GET_CNV(alt);
+	while (getline(&s, &len, fp) != EOF){
+		*svs = realloc(*svs, ++(*n_sv) * sizeof(struct sv_t));
+		struct sv_t *sv = *svs + *n_sv - 1;
+		rc = sscanf(s, "%s\t%d\t%d\t%s\t%s\t%s\t%s",
+			    chr, &sv->start, &sv->end, name, ref, alt, sv->type);
+		assert(rc == 7 && "Error: Wrong SNP tsv format");
+
+		sv->chr = get_chr_id(chr, genome);
+		assert(sv->chr != -1 && "Error: Chr not found in reference");
+		sv->cnv = 0;
+		sv->seq = NULL;
+
+		/* convert from 1-based coordinate system in VCF file into 0-based 
+		 * coordinate system
+		 */
+		--sv->start, --sv->end;
+
+		/* preprocess some structural variants & get number of duplication */
+		if (strcmp(sv->type, "CNV") == 0 || strcmp(sv->type, "DUP") == 0) {
+			sv->cnv = alt[3] - '0';
 			strcpy(sv->type, "CNV");
 		}
-		// just in case deletion of ALU, LINE1, SVA
-		if (!strncmp(sv->type, "DEL", 3)) {
+
+		/* just in case deletion of ALU, LINE1, SVA */
+		if (strncmp(sv->type, "DEL", 3) == 0) {
 			strcpy(sv->type, "CNV");
-		} 
-		else if (IS_RETRO(sv)) {
+		} else if (IS_RETRO(sv)) {
 			strcpy(sv->type, "INS");
 		}
-	
-		// Keep the first base for deletion
-		/* if (IS_DEL(sv))
-			++sv->start;
-		*/
-		//printf("type: %s, cnv: %d\n", sv->type, sv->cnv);
-		sv++;	
+
+		/* debug read sv */
+		// printf("sv %d: %s %d %d %s %s %s %s\n", *n_sv - 1, chr,
+		// 	sv->start, sv->end, name, ref, alt, sv->type);
 	}
-	*n = sv-svs;
 }
 
 double ran_normal()
@@ -73,26 +90,24 @@ double ran_normal()
 	}
 }
 
-void seg2fasta(struct seg_t *seg, int idx, int n, char ** genome, FILE *fp)
+void seg2fasta(struct seg_t *seg, int n_seg, int idx, struct genome_t *genome, FILE *fp)
 {
-	int i, j, k = 0;
-	int c, c1;
-	char nt_char[4] = "ACGT";
+	int i, j, k, c;
 	fputc('>', fp);
-	fputs(chroms[idx], fp);
+	fputs(genome->ref_name[idx], fp);
 	fputc('\n', fp);
 	
-	for (i = 0; i < n; i++, seg++) {
+	for (i = k = 0; i < n_seg; ++i, ++seg) {
 		if (seg->strand == '-') {
-			for (j = seg->end; j > seg->start; j--) {
-			    c = seg->seq[j];
-				c1 = nst_nt4_table[c] > 3 ? 4: 3 - nst_nt4_table[c];
-				fputc(nt_char[c1], fp);
+			for (j = seg->end; j > seg->start; --j) {
+				c = seg->seq[j];
+				c = nt4_table[c] == 4 ? 4 : 3 - nt4_table[c];
+				fputc(nt_char[c], fp);
 				if (++k % 80 == 0)
 					fputc('\n', fp);
 			}
 		} else {
-			for (j = seg->start; j < seg->end; j++) {
+			for (j = seg->start; j < seg->end; ++j) {
 				fputc(seg->seq[j], fp);
 				if (++k % 80 == 0)
 					fputc('\n', fp);
@@ -108,15 +123,14 @@ void seg2fasta(struct seg_t *seg, int idx, int n, char ** genome, FILE *fp)
 /* compute sum size of segments */
 int segsize(struct seg_t *seg, int n)
 {
-	int s = 0;
-	int i;
-	for (i = 0; i < n; i++, seg++) {
-		s = s + (seg->end - seg->start);
-	}
-	return s;
+	int sum, i;
+	for (i = sum = 0; i < n; ++i, ++seg)
+		sum = sum + seg->end - seg->start;
+	return sum;
 }
+
 /* compare structural variant segment */
-int comp_sv(const void *a, const void *b)
+static int comp_sv(const void *a, const void *b)
 {
 	struct sv_t *s1 = (struct sv_t *)a;
 	struct sv_t *s2 = (struct sv_t *)b;
@@ -126,153 +140,114 @@ int comp_sv(const void *a, const void *b)
 	return s1->chr - s2->chr;
 }
 
-void sim_sv(struct sv_t *svs, int n, char **seq, struct seg_t **segs, int *n_segs,
-	    FILE *stream, FILE *bed_f)
+/* This function assumes the input is an sorted structural variant list */
+void sim_sv(struct sv_t *svs, int n_sv, struct genome_t *genome, FILE *hap_f, FILE *bed_f)
 {
-	 /* This function assumes the input is an sorted structural variant list */
-	//printf("Number of structural variants: %d\n", n);
-	extern int nchroms;
-	int i, ch;
+#define PUSH_SEG(_tid, _start, _end, _seq, _strand) do {		\
+	segs[_tid] = realloc(segs[_tid], ++seg_cnt[_tid]		\
+			     * sizeof(struct seg_t));			\
+	segs[_tid][seg_cnt[_tid] - 1] = (struct seg_t){			\
+		.start = _start,					\
+		.end = _end, 						\
+		.seq = _seq,						\
+		.strand = _strand					\
+	};								\
+} while (0);
+
+	int i, tid;
 	struct sv_t *sv = svs;
-	struct seg_t *seg_prev[nchroms];
-	int prev[nchroms];
-	double r;
-	int idx;
+	struct seg_t *segs[genome->sz];
+	int seg_cnt[genome->sz], prev[genome->sz];
 
-	for (i = 0 ; i < nchroms; i++) {
-		segs[i] = calloc(MAX_DUP * n, sizeof(struct seg_t));
-		prev[i] = 0;
+	for (i = 0; i < genome->sz; ++i) {
+		segs[i] = NULL;
+		prev[i] = seg_cnt[i] = 0;
 	}
-	memmove(seg_prev, segs, nchroms * sizeof(struct seg_t *));
-	/* sort structural variants by its pos and chromosome */
-	qsort(svs, n, sizeof(struct sv_t), comp_sv);
 
-	while (sv - svs < n) {
-		//make one segment chain for each chromosome
-		ch = sv->chr;
-		//avoid overlap regions
-		if (sv->start <= prev[ch]) {
-			fprintf(stderr, "WARNNING: overlaid structural variants %s:%d-%d\n",
-					chroms[ch], sv->start, sv->end);
+	/* sort structural variants by its chromosome then pos */
+	qsort(svs, n_sv, sizeof(struct sv_t), comp_sv);
+
+	while (sv - svs < n_sv) {
+		tid = sv->chr;
+
+		/* remove overlap regions */
+		if (sv->start <= prev[tid]) {
+			fprintf(stderr,
+				"Warnning: overlap structural variants %s:%d-%d, skipping!\n",
+				genome->ref_name[tid], sv->start, sv->end);
 			++sv;
 			continue;
-			//exit(EXIT_FAILURE);
 		}
-		*(segs[ch]++) = (struct seg_t){.start = prev[ch], .end = sv->start, 
-				.seq = *(seq + sv->chr), .strand = '+'};
-		//printf("%d\t%d\tNOR\n", prev[ch], sv->start);
+
+		PUSH_SEG(tid, prev[tid], sv->start, genome->seq[tid], '+');
 
 		if (IS_DEL(sv)) {
-			prev[ch] = sv->end;
-			fprintf(bed_f, "%s\t%d\t%s\t%d\tDEL\n", chroms[ch],
-				sv->start, chroms[ch], sv->end);
+			prev[tid] = sv->end;
+			fprintf(bed_f, "%s\t%d\t%s\t%d\tDEL\n", genome->ref_name[tid],
+				sv->start, genome->ref_name[tid], sv->end);
 		} else if (IS_DUP(sv)) {
-			//printf("cnv: %d\n", sv->cnv);
-			for (i = 0; i < sv->cnv; i++) {
-				*(segs[ch]++) = (struct seg_t){.start = sv->start, .end = sv->end, 
-						.seq = *(seq + sv->chr), .strand = '+'};
-				fprintf(bed_f, "%s\t%d\t%s\t%d\tDUP\n",
-					chroms[ch], sv->start, chroms[ch], sv->end);
+			for (i = 0; i < sv->cnv; ++i) {
+				PUSH_SEG(tid, sv->start, sv->end, genome->seq[tid], '+');
+				fprintf(bed_f, "%s\t%d\t%s\t%d\tDUP\n", genome->ref_name[tid],
+					sv->start, genome->ref_name[tid], sv->end);
 			}
-			prev[ch] = sv->end;
+			prev[tid] = sv->end;
 		} else if (IS_INV(sv)) {
-			*(segs[ch]++) = (struct seg_t){.start = sv->start, .end = sv->end, 
-					.seq = *(seq + sv->chr), .strand = '-'};
-			prev[ch] = sv->end;
-			fprintf(bed_f, "%s\t%d\t%s\t%d\tINV\n", chroms[ch],
-				sv->start, chroms[ch], sv->end);
+			PUSH_SEG(tid, sv->start, sv->end, genome->seq[tid], '-');
+			prev[tid] = sv->end;
+			fprintf(bed_f, "%s\t%d\t%s\t%d\tINV\n", genome->ref_name[tid],
+				sv->start, genome->ref_name[tid], sv->end);
 		} else if (IS_INS(sv)) {
-			r = ran_normal();
-			r *= NUMBER_RETROS;
-			idx = abs((int)(r + 0.5));
-			idx = idx > NUMBER_RETROS?NUMBER_RETROS - 1 : idx;
+			double r = ran_normal();
+			r *= n_retro;
+			int idx = abs((int)(r + 0.5));
+			idx = idx > n_retro ? n_retro - 1 : idx;
 
-			*(segs[ch]++) = (struct seg_t){
-				.start = retros[idx].start,
-				.end = retros[idx].end,
-				.seq = retros[idx].seq,
-				.strand = retros[idx].strand
-			};
-			prev[ch] = sv->start;
-			fprintf(bed_f, "%s\t%d\t%s\t%d\tINS\n", chroms[ch], sv->start, 
-				chroms[ch], sv->start + (retros[idx].end - retros[idx].start)); 
+			PUSH_SEG(tid, retros[idx].start, retros[idx].end,
+				 retros[idx].seq, retros[idx].strand);
+			prev[tid] = sv->start;
+			fprintf(bed_f, "%s\t%d\t%s\t%d\tINS\n", genome->ref_name[tid],
+				sv->start, genome->ref_name[tid],
+				sv->start + (retros[idx].end - retros[idx].start)); 
 		} else if (IS_SINS(sv)) {
-			*(segs[ch]++) = (struct seg_t) {
-				.start = sv->start,
-				.end = sv->end,
-				.seq = sv->seq,
-				.strand = '+'
-			};
-			prev[ch] = sv->start;
-			fprintf(bed_f, "%s\t%d\t%s\t%d\tINS\n", chroms[ch],
-				sv->start, chroms[ch], sv->end);
+			PUSH_SEG(tid, sv->start, sv->end, sv->seq, '-');
+			prev[tid] = sv->start;
+			fprintf(bed_f, "%s\t%d\t%s\t%d\tINS\n", genome->ref_name[tid],
+				sv->start, genome->ref_name[tid], sv->end);
 		}
 		++sv;
 	}
-	//Only generate sequences for chromosomes 1-22 X
-	for (i = 0 ; i < nchroms - 1; i++) {
-		// for chromosome doesn't have any SV
-		if (segs[i] == seg_prev[i]) {
-			*(segs[i]) = (struct seg_t){.start = 0, 
-				.end = strlen(*(seq + i)), .seq = *(seq + i)};
+
+	for (i = 0; i < genome->sz; ++i) {
+		if (seg_cnt[i] == 0) {
+			PUSH_SEG(i, 0, genome->chr_sz[i], genome->seq[i], '+');
 		} else {
-			*(segs[i]) = (struct seg_t){.start = (segs[i]-1)->end, 
-				.end = strlen(*(seq + i)), .seq = *(seq + i)};
+			PUSH_SEG(i, prev[i], genome->chr_sz[i], genome->seq[i], '+');
 		}
-	//	printf("Total size of chrom %s: %d\n", chroms[i], segsize(seg_prev[i], 
-	//					segs[i] - seg_prev[i] + 1));
-		seg2fasta(seg_prev[i], i, segs[i] - seg_prev[i] + 1, seq, stream);
+		seg2fasta(segs[i], seg_cnt[i], i, genome, hap_f);
 	}
+
+#undef PUSH_SEG
 }
 
 /* read retrotransposon from static bed file */
-
-void read_retro(FILE *fp, char **seqs)
+void read_retro(FILE *fp, struct genome_t *genome)
 {	
-	int c, i = 0, chr_i = 0;
-	size_t l;
-	char chr[3];
-	char *s = malloc(NAME_BUFFER);
-	extern char *chroms[];
+	int i = 0, rc, tid;
+	size_t len = 0;
+	char chr[1024], *s = NULL;
 
-	while ((c = getline(&s, &l, fp)) != EOF) {
-		sscanf(s, "%s\t%d\t%d\t%c", chr, &retros[i].start, &retros[i].end,
-			&retros[i].strand);
-		CHROM_IDX(chr, chr_i);
-		retros[i].seq = *(seqs + chr_i);
-		//printf("retro %d:, %s, %d, %d, %c\n", i, chr, retros[i].start, retros[i].end,
-		//		retros[i].strand);
-		++i;
-		++NUMBER_RETROS;
+	while (getline(&s, &len, fp) != EOF) {
+		retros = realloc(retros, ++n_retro * sizeof(struct seg_t));
+		rc = sscanf(s, "%s\t%d\t%d\t%c", chr, &retros[i].start,
+			    &retros[i].end, &retros[i].strand);
+		assert(rc == 4 && "Error: Wrong retro bed format!");
+		tid = get_chr_id(chr, genome);
+		assert(tid != -1 && "Error: Chr not found in reference");
+		retros[i++].seq = genome->seq[tid];
+
+		/* debug read retro */
+		// printf("retro %d: %s, %d, %d, %c\n", i - 1, chr,
+		// 	retros[i - 1].start, retros[i - 1].end, retros[i - 1].strand);
 	}
-}
-
-int main(int argc, char *argv[])
-{
-	FILE *sv_fp = fopen(argv[1], "r");
-	FILE *genome_fp = fopen(argv[2], "r");
-	FILE *retro_fp = fopen(argv[3], "r");
-	FILE *snp_fp = fopen(argv[4], "r");
-	FILE *bed_f = fopen(argv[5], "w");
-	FILE *stream = stdout;
-	struct sv_t *svs = (struct sv_t*)calloc(MAX_SV, sizeof(struct sv_t));
-	extern int nchroms;
-	if (sv_fp == NULL)
-		exit(EXIT_FAILURE);
-	
-	char **genome = read_genome(genome_fp);
-
-	/* initiate some variables related to number of chromosome */
-	struct seg_t *segs[nchroms]; 
-	int n_sv;
-	int n_segs[nchroms];
-
-	read_sv(sv_fp, svs, &n_sv);
-	//printf("Done reading genome!\n");
-	read_retro(retro_fp, genome);
-
-	read_snp(snp_fp, svs, &n_sv, genome, bed_f);
-	//printf("Done read sv!\n");
-	sim_sv(svs, n_sv, genome, segs, n_segs, stream, bed_f);
-	return 0;
 }

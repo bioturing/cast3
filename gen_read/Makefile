@@ -3,7 +3,7 @@ GCC_FLAG = 		-Wall -Wfatal-errors -O2 -std=c++11
 OBJ_MAIN =		generate.o 		\
 			genome.o
 
-alignment:
+gen_read:
 
 	g++ $(GCC_FLAG) -c -o generate.o generate.cpp
 	g++ $(GCC_FLAG) -c -o genome.o genome.cpp

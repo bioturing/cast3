@@ -1,5 +1,5 @@
-#ifndef READ_FASTA_H
-#define READ_FASTA_H
+#ifndef _READ_FASTA_H_
+#define _READ_FASTA_H_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,21 +7,21 @@
 #include <string.h>
 #include <ctype.h>
 
-#define MAX_CHROMS 200
+struct genome_t {
+	char **seq;
+	char **ref_name;
+	int *chr_sz;
+	int sz;
+};
 
-void get_name(char *s, FILE *stream);
-int get_seq(char **s, FILE *stream);
-char **read_genome(FILE *fp);
-void read_fasta(FILE *fp, char **seqs);
-
-char *chroms[MAX_CHROMS];
-int nchroms;
-const uint8_t nst_nt4_table[256];
-
-struct seq_t{
+struct seq_t {
 	char *name;
 	char *seq;
 };
 
-#endif
+int get_chr_id(char *s, struct genome_t *genome);
+
+struct genome_t read_genome(FILE *fp);
+
+#endif /* _READ_FASTA_H_ */
 

@@ -4,47 +4,41 @@
 #include <assert.h>
 
 #include "read_snp.h"
-#include "read_sv.h"
 
-#define MAX_SNP_LINE			2000
-#define MAX_INDEL_SEQ_BUFFER		1000
+#define LIMIT_SNP_LEN			1000
 
-void read_snp(FILE *fp, struct sv_t *svs, int *n, char **genome, FILE *bed_f)
+void read_snp(FILE *fp, struct sv_t **svs, int *n_sv, struct genome_t *genome)
 {
-	int i;
-	size_t l;
-	char *line = malloc(MAX_SNP_LINE);	
-	char *ref = malloc(MAX_INDEL_SEQ_BUFFER);
-	char *alt = malloc(MAX_INDEL_SEQ_BUFFER);
-	int start, end;
-	char chr[3];
-	struct sv_t *sv = svs + *n;
-	extern char *chroms[];
+	int tid, rc, start, end;
+	size_t len = 0;
+	char *line = NULL;
+	char ref[1024], alt[1024], chr[1024];
 
-	while (getline(&line, &l, fp) != EOF) {
-		sscanf(line, "%s%d%d%s%s", chr, &start, &end, ref, alt);
+	while (getline(&line, &len, fp) != EOF) {
+		rc = sscanf(line, "%s\t%d\t%d\t%s\t%s", chr, &start, &end, ref, alt);
+		assert(rc == 5 && "Error: Wrong SNP tsv format");
+		assert(end - start + 1 < LIMIT_SNP_LEN &&
+		       "Error: Too long short-INDEL!!!");
+
 		/* convert to 0-based coordinate */
 		--start, --end;
-		CHROM_IDX(chr, i);
-		
-		if (end - start + 1 > MAX_INDEL_SEQ_BUFFER) {
-			fprintf(stderr, "Too long short-INDEL!!!\n");
-			exit(EXIT_FAILURE);
-		}
+		tid = get_chr_id(chr, genome);
+		assert(tid != -1 && "Error: Chr not found in reference");
 
-		if (start - end == 0) {
-			genome[i][start] = alt[0];
+		if (end - start == 0) {
+			assert(start < genome->chr_sz[tid] &&
+			       "Error: SNP overflow");
+			genome->seq[tid][start] = alt[0];
 		} else {
-			++*n;
-			//printf("Indel %d\n", j++);
-			assert(end > start);
-			*(sv) = (struct sv_t){.start = start, .end = end, .chr = i};
+			assert(end > start && "Error: SV has end <= start");
+			++(*n_sv);
+			*svs = realloc(*svs, *n_sv * sizeof(struct sv_t));
+			struct sv_t *sv = *svs + *n_sv - 1;
+			*sv = (struct sv_t){.start = start, .end = end, .chr = tid};
 			strcpy(sv->type, strlen(ref) > strlen(alt) ? "CNV" : "SINS");
-			if (!strcmp(sv->type, "INS")) {
-				sv->seq = malloc(strlen(alt));
-				strcpy(sv->seq, alt);
-			}
-			++sv;
+			sv->cnv = 0;
+			if (strcmp(sv->type, "SINS") == 0)
+				sv->seq = strdup(alt);
 		}
 	}
 }

@@ -1,17 +1,16 @@
 CC =			gcc
 
-CFLAGS =		-static -Wall -Wfatal-errors -O2
-
-LINK =			-lm
+CFLAGS =		-Wall -Wfatal-errors -O2
 
 OBJS = 			read_fasta.o 			\
-			read_snp.o
+			read_snp.o 			\
+			read_sv.o
 
-MAIN_OBJ =		../bin/sim
+MAIN_OBJ =		sim.exe
 
-all:
-	$(CC) $(CFLAGS) -c -o read_fasta.o read_fasta.c $(LINK)
-	$(CC) $(CFLAGS) -c -o read_snp.o read_snp.c $(LINK)
-	$(CC) $(CFLAGS) $(OBJS) read_sv.c -o $(MAIN_OBJ) $(LINK)
-clean:
-	rm read_sv
+sim_hap:
+	$(CC) $(CFLAGS) -c -o read_fasta.o read_fasta.c
+	$(CC) $(CFLAGS) -c -o read_snp.o read_snp.c
+	$(CC) $(CFLAGS) -c -o read_sv.o read_sv.c
+	$(CC) $(CFLAGS) $(OBJS) main.c -o $(MAIN_OBJ) -lm
+	rm -rf *.o

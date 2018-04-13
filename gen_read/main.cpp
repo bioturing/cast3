@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#define BARCODE_PATH                "4M-with-alts-february-2016.txt"
+#define BARCODE_PATH                "../4M-with-alts-february-2016.txt"
 #define OUT_DIR                     "./"
 
 struct argument_t {

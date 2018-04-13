@@ -301,11 +301,11 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                 /* output read */
                 std::string name = hap.convert(mole.tid, mole.start_pos + pos, read_len - BARCODE_SZ,
                                                mole.start_pos + pos + isize, read_len);
-                printf("@%s/1\n%s\n+\n", name.c_str(), (barcode + seq1).c_str());
+                printf("%s/1\n%s\n+\n", name.c_str(), (barcode + seq1).c_str());
                 for (k = 0; k < read_len; ++k)
                     printf("#");
                 printf("\n");
-                printf("@%s/2\n%s\n+\n", name.c_str(), seq2.c_str());
+                printf("%s/2\n%s\n+\n", name.c_str(), seq2.c_str());
                 for (k = 0; k < read_len; ++k)
                     printf("#");
                 printf("\n");

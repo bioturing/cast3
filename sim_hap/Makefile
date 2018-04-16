@@ -6,7 +6,7 @@ OBJS = 			read_fasta.o 			\
 			read_snp.o 			\
 			read_sv.o
 
-MAIN_OBJ =		sim.exe
+MAIN_OBJ =		../bin/sim.exe
 
 sim_hap:
 	$(CC) $(CFLAGS) -c -o read_fasta.o read_fasta.c

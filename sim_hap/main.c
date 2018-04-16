@@ -24,10 +24,10 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Could not open snp file!\n");
 		exit(EXIT_FAILURE);
 	}
-	char *bed = malloc(strlen(argv[5]) + 8);
-	char *hap = malloc(strlen(argv[5]) + 10);
-	sprintf(bed, "%shapA.bed", argv[5]);
-    sprintf(hap, "%shapA.fasta", argv[5]);
+	char bed[1024];
+	char hap[1024];
+	sprintf(bed, "%s/%s.bed", argv[5], argv[6]);
+    sprintf(hap, "%s/%s.fasta", argv[5], argv[6]);
 
 	FILE *bed_f = fopen(bed, "w");
 	if (!bed_f) {

@@ -19,7 +19,7 @@ static char *get_name(FILE *stream)
 	int sz = 1, i = 0, c;
 	while (1) {
 		c = getc(stream);
-		if (c == '\n' || c == ' ')
+		if (isspace(c)) // isspace(): \t, \n, \v, \f, \r
 			break;
 		if (i + 1 == sz) {
 			sz <<= 1;
@@ -37,25 +37,29 @@ static char *get_name(FILE *stream)
 static char *get_seq(FILE *stream, int *sz)
 {
 	char *s = malloc(SEQ_BUFFER);
-	int buf_cnt = 1, i = 0, c;
+	char *line;
+	int buf_cnt = 1;
+	int c;
+	size_t l_buff = 0, ls = 0, l = 0;
 
-	while (1) {
-		c = getc(stream);
-		if (c == '>' || c == EOF)
+	while ((c = fgetc(stream)) != EOF){
+		/* roll back 1 character */
+		ungetc(c, stream);
+		if (c == '>')
 			break;
-		if (i + 1 >= SEQ_BUFFER * buf_cnt)
-			s = realloc(s, ++buf_cnt * SEQ_BUFFER);
-		if (c != '\n')
-			s[i++] = c;
+		l = getline(&line, &l_buff, stream);
+		if (ls + l > buf_cnt * SEQ_BUFFER){
+			buf_cnt <<= 1;
+			s = realloc(s, buf_cnt * SEQ_BUFFER);
+		}
+		memccpy(s + ls, line, '\n', l);
+		ls += l - 1; //exclude the '\n'
+		s[ls] = '\0';
 	}
-	*sz = i;
-	s = realloc(s, i + 1);
-	s[i] = '\0';
-
-	/* roll back 1 character */
-	ungetc(c, stream);
+	*sz = ls;
 	return s;
 }
+
 
 struct genome_t read_genome(FILE *fp)
 {

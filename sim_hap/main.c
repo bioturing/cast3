@@ -24,12 +24,22 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Could not open snp file!\n");
 		exit(EXIT_FAILURE);
 	}
-	FILE *bed_f = fopen(argv[5], "w");
+	char *bed = malloc(strlen(argv[5]) + 8);
+	char *hap = malloc(strlen(argv[5]) + 10);
+	sprintf(bed, "%shapA.bed", argv[5]);
+    sprintf(hap, "%shapA.fasta", argv[5]);
+
+	FILE *bed_f = fopen(bed, "w");
 	if (!bed_f) {
 		fprintf(stderr, "Could not open bed file!\n");
 		exit(EXIT_FAILURE);
 	}
 
+    FILE *hap_f = fopen(hap, "w");
+	if (!hap_f) {
+		fprintf(stderr, "Could not open haplotype file!\n");
+		exit(EXIT_FAILURE);
+	}
 	struct sv_t *svs = NULL;
 	int n_sv = 0;
 
@@ -47,7 +57,7 @@ int main(int argc, char *argv[])
 	read_snp(snp_fp, &svs, &n_sv, &genome);
 
 	fprintf(stderr, "Creating haplotype ... \n");
-	sim_sv(svs, n_sv, &genome, stdout, bed_f);
+	sim_sv(svs, n_sv, &genome, hap_f, bed_f);
 
 	return 0;
 }

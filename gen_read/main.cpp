@@ -28,6 +28,7 @@ void print_usage()
     fprintf(stderr, "  -m INT           average # of molecule per barcode [10]\n");
     fprintf(stderr, "  -l INT           read length [151]\n");
     fprintf(stderr, "  -o STR           output directory [./]\n");
+    fprintf(stderr, "  -b STR           file that contains barcode database [./]\n");
     fprintf(stderr, "  -h               print usage and exit\n");
 }
 
@@ -65,6 +66,9 @@ void parse_argument(int argc, char *argv[])
         case 'l':
             args.read_len = atoi(optarg);
             break;
+        case 'b':
+        	args.barcode_path = std::string(optarg);
+        	break;
         case 'h':
             print_usage();
             exit(0);

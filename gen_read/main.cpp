@@ -52,7 +52,7 @@ void parse_argument(int argc, char *argv[])
     args.read_len = 151;
     int c;
 
-    while ((c = getopt(argc, argv, "n:m:l:ho:")) != -1) {
+    while ((c = getopt(argc, argv, "n:m:l:b:ho:")) != -1) {
         switch (c) {
         case 'n':
             args.total_read_pair = atoi(optarg) * 1000000;

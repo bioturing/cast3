@@ -60,9 +60,9 @@ parser_sim = subparsers.add_parser(
                 	'sim',
                 	formatter_class=RawTextHelpFormatter,
                 	description= 'Simulate one haplotype\n\n'
-                		         'Example: python cast3.py sim --hapSV ./test_data/SV/NA12878.hap.hetA.SV.tsv ./test_data/SV/NA12878.hap.hetA.SV.tsv --ref\n'
+                		         'Example: python cast3.py sim --hapSV ./test_data/SV/NA12878.hap.hetA.SV.tsv ./test_data/SV/NA12878.hap.hetB.SV.tsv --ref\n'
                 		         '         Homo_sapiens.GRCh37.75.dna_sm.primary_assembly.fa --retro ./test_data/retro/retros.bed\n'
-                		         '--hapSNP ./test_data/SNP/NA12878.hap.hetA.SNP.tsv ./test_data/SNP/NA12878.hap.hetA.SNP.tsv --outdir sim',
+                		         '--hapSNP ./test_data/SNP/NA12878.hap.hetA.SNP.tsv ./test_data/SNP/NA12878.hap.hetB.SNP.tsv --outdir sim --prefix test',
                 	help='builds a mermaid index')
 
 parser_sim.add_argument('--hapSV', help='Structural variants tsv file, please see the example in test_data folder', required=True, metavar='STR', nargs = '+')
@@ -102,7 +102,7 @@ parser_gen = subparsers.add_parser(
                     'gen_read',
                 	formatter_class=RawTextHelpFormatter,
                 	description= 'Generate short read sequencing data in 10X Genomics technology.\n\n'
-                		         'Example: python cast3.py gen_read --faidx ../longread/reference/Homo_sapiens.GRCh37.75.dna_sm.primary_assembly.fa.fai --prefix tan --outdir test --nmols 10 --length 151 --mreads 400 --barcode test_data/barcode/4M-with-alts-february-2016.txt',
+                		         'Example: python cast3.py gen_read --faidx ../longread/reference/Homo_sapiens.GRCh37.75.dna_sm.primary_assembly.fa.fai --prefix test --outdir sim --nmols 10 --length 151 --mreads 400 --barcode test_data/barcode/4M-with-alts-february-2016.txt',
                                          help='Simulate the pair-end sequencing data in 10X Genomics technology with mean molecule length is 50kb\n'
                                          'and median insert size is 300. Barcode is the 16 base pairs at the beginning at read 1')
 

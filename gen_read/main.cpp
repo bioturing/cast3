@@ -3,12 +3,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#define BARCODE_PATH                "../4M-with-alts-february-2016.txt"
 #define OUT_DIR                     "./"
 
 struct argument_t {
     std::string outdir;
-    std::string barcode_path; 
     int64_t total_read_pair;
     int mean_mlc_per_bx;
     int read_len;
@@ -17,6 +15,7 @@ struct argument_t {
     char *bed1_path;
     char *bed2_path;
     char *fai_path;
+    char *barcode_path;
 } args;
 
 void print_usage()
@@ -46,7 +45,6 @@ void make_outdir(const char *path)
 void parse_argument(int argc, char *argv[])
 {
     args.outdir = OUT_DIR;
-    args.barcode_path = BARCODE_PATH;
     args.mean_mlc_per_bx = 10;
     args.total_read_pair = 400000000;
     args.read_len = 151;
@@ -67,8 +65,8 @@ void parse_argument(int argc, char *argv[])
             args.read_len = atoi(optarg);
             break;
         case 'b':
-        	args.barcode_path = std::string(optarg);
-        	break;
+            args.barcode_path = optarg;
+            break;
         case 'h':
             print_usage();
             exit(0);
@@ -97,7 +95,7 @@ void parse_argument(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     parse_argument(argc, argv);
-    generate_t generate(args.barcode_path.c_str(), args.hap1_path, args.bed1_path,
+    generate_t generate(args.barcode_path, args.hap1_path, args.bed1_path,
                         args.hap2_path, args.bed2_path, args.fai_path);
     generate.generate_read(args.read_len, args.total_read_pair, args.mean_mlc_per_bx);
     return 0;

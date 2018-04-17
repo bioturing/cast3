@@ -1,8 +1,13 @@
 #include "genome.h"
 #include <assert.h>
 
-inline std::string get_chr_name(std::string &s)
+std::string get_chr_name(std::string &s)
 {
+    int pos = s.find(" ");
+    if (pos == (int)std::string::npos)
+        pos = s.find("\t");
+    if (pos == (int)std::string::npos)
+        pos = s.size();
     return s.substr(1, (s.find(" ") == std::string::npos ? s.size() : s.find(" ")) - 1);
 }
 

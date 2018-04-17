@@ -81,8 +81,8 @@ def cast3_gen(args):
         print "Please install Cast3 first!"
         exit()
 
-    cmd = ["./bin/gen_read", "-n %d" %args.mreads, "-m %d"%args.nmols, \
-            "-l %d" %args.length, "-o %s" %args.outdir, "-b %s" %args.barcode]
+    cmd = ["./bin/gen_read", "-n", "%d" %args.mreads, "-m", "%d"%args.nmols,
+            "-l", "%d" %args.length, "-o", "%s" %args.outdir, "-b", "%s" %args.barcode]
     cmd.append(args.faidx)
     prefix = args.prefix
     for f in [".hapA.bed", ".hapA.fasta", ".hapB.bed", ".hapB.fasta"]:
@@ -104,8 +104,7 @@ parser_gen = subparsers.add_parser(
                 	description= 'Generate short read sequencing data in 10X Genomics technology.\n\n'
                 		         'Example: python cast3.py gen_read --faidx ../longread/reference/Homo_sapiens.GRCh37.75.dna_sm.primary_assembly.fa.fai --prefix tan --outdir test --nmols 10 --length 151 --mreads 400 --barcode test_data/barcode/4M-with-alts-february-2016.txt',
                                          help='Simulate the pair-end sequencing data in 10X Genomics technology with mean molecule length is 50kb\n'
-                                         'and median insert size is 300. Barcode is the 16 base pairs at the beginning at read 1',
-                    add_help=False)
+                                         'and median insert size is 300. Barcode is the 16 base pairs at the beginning at read 1')
 
 parser_gen.add_argument('--faidx', help='Fasta index file of human genome grch37 verison', required=True, metavar='STR')
 parser_gen.add_argument('--prefix', help='Prefix of the output file, must be the same as the haplotype sequences', required=True, metavar='STR')

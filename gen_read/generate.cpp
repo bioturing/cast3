@@ -153,7 +153,6 @@ generate_t::generate_t(const char *bx_path, const char *hap1_path, const char *b
 {
     fprintf(stderr, "Loading barcode ... ");
     std::ifstream fi(bx_path);
-	std::cout << bx_path << std::endl;
     if (!fi.is_open()) {
         perror("\nCould not open barcode file");
         exit(EXIT_FAILURE);

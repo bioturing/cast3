@@ -65,6 +65,7 @@ genome_t::genome_t(const char *fa_path, const char *bed_path, const char *fai_pa
 std::pair<int, int> genome_t::check_pos(int64_t pos, int len)
 {
     auto up = std::upper_bound(chr_pos.begin(), chr_pos.end(), pos);
+    assert(up != chr_pos.end());
     if (pos + len >= *up)
         return std::make_pair(-1, -1);
     int tid = up - chr_pos.begin();

@@ -181,8 +181,9 @@ molecule_t generate_t::generate_molecule(int read_len)
 
     /* get pos */
     ret.hap = uniform_01(generator);
-    std::uniform_int_distribution<int64_t> uniform_dis(0, ret.hap ? hap1.get_chr_pos_back() :
-                                                       hap2.get_chr_pos_back());
+    std::uniform_int_distribution<int64_t> uniform_dis(0, ret.hap ?
+                                                       hap1.get_chr_pos_back() - 1 :
+                                                       hap2.get_chr_pos_back() - 1);
     std::pair<int, int> rp;
     while (1) {
         rp = ret.hap ? hap1.check_pos(uniform_dis(generator), mole_len) :
@@ -196,7 +197,7 @@ molecule_t generate_t::generate_molecule(int read_len)
 }
 
 std::vector<molecule_t> generate_t::generate_barcode(int read_len, int &total_read,
-                                         int mean_mlc_per_bx)
+                                                     int mean_mlc_per_bx)
 {
     std::poisson_distribution<int> poisson_dis(mean_mlc_per_bx);
     int n_mole = poisson_dis(generator);
@@ -287,7 +288,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
         for (auto &mole : ret) {
             genome_t &hap = mole.hap == 0 ? hap1 : hap2;
             for (j = 0; j < mole.n_read_pair; ++j) {
-                std::uniform_int_distribution<int> uniform_dis(0, mole.len);
+                std::uniform_int_distribution<int> uniform_dis(0, mole.len - 1);
                 std::string barcode = gen_barcode_error(barcode_lst[i]);
                 while (1) {
                     pos = uniform_dis(generator);

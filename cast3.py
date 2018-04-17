@@ -60,9 +60,9 @@ parser_sim = subparsers.add_parser(
                 	'sim',
                 	formatter_class=RawTextHelpFormatter,
                 	description= 'Simulate one haplotype\n\n'
-                		         'Example: python cast3.py sim --hapSV ./test_data/SV/NA12878.hap.hetA.SV.tsv ./test_data/SV/NA12878.hap.hetA.SV.tsv --ref\n'
+                		         'Example: python cast3.py sim --hapSV ./test_data/SV/NA12878.hap.hetA.SV.tsv ./test_data/SV/NA12878.hap.hetB.SV.tsv --ref\n'
                 		         '         Homo_sapiens.GRCh37.75.dna_sm.primary_assembly.fa --retro ./test_data/retro/retros.bed\n'
-                		         '--hapSNP ./test_data/SNP/NA12878.hap.hetA.SNP.tsv ./test_data/SNP/NA12878.hap.hetA.SNP.tsv --outdir sim',
+                		         '--hapSNP ./test_data/SNP/NA12878.hap.hetA.SNP.tsv ./test_data/SNP/NA12878.hap.hetB.SNP.tsv --outdir sim',
                 	help='builds a mermaid index')
 
 parser_sim.add_argument('--hapSV', help='Structural variants tsv file, please see the example in test_data folder', required=True, metavar='STR', nargs = '+')

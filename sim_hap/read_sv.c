@@ -191,7 +191,7 @@ void sim_sv(struct sv_t *svs, int n_sv, struct genome_t *genome, FILE *hap_f, FI
 				fprintf(bed_f, "%s\t%d\t%s\t%d\tDUP\n", genome->ref_name[tid],
 					sv->start, genome->ref_name[tid], sv->end);
 			}
-			prev[tid] = sv->end;
+			prev[tid] = sv->start;
 		} else if (IS_INV(sv)) {
 			PUSH_SEG(tid, sv->start, sv->end, genome->seq[tid], '-');
 			prev[tid] = sv->end;
@@ -201,7 +201,7 @@ void sim_sv(struct sv_t *svs, int n_sv, struct genome_t *genome, FILE *hap_f, FI
 			double r = ran_normal();
 			r *= n_retro;
 			int idx = abs((int)(r + 0.5));
-			idx = idx > n_retro ? n_retro - 1 : idx;
+			idx = idx >= n_retro ? n_retro - 1 : idx;
 
 			PUSH_SEG(tid, retros[idx].start, retros[idx].end,
 				 retros[idx].seq, retros[idx].strand);

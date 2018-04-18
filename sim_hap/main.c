@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	char bed[1024];
 	char hap[1024];
 	sprintf(bed, "%s/%s.bed", argv[5], argv[6]);
-    sprintf(hap, "%s/%s.fasta", argv[5], argv[6]);
+	sprintf(hap, "%s/%s.fasta", argv[5], argv[6]);
 
 	FILE *bed_f = fopen(bed, "w");
 	if (!bed_f) {
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-    FILE *hap_f = fopen(hap, "w");
+	FILE *hap_f = fopen(hap, "w");
 	if (!hap_f) {
 		fprintf(stderr, "Could not open haplotype file!\n");
 		exit(EXIT_FAILURE);
@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
 	// fprintf(stderr, "%d\n", genome.sz);
 	// for (int i = 0; i < genome.sz; ++i)
 	// 	fprintf(stderr, "%s\t%d\n", genome.ref_name[i], genome.chr_sz[i]);
+	// exit(1);
 
 	fprintf(stderr, "Parsing variant ... \n");
 	read_retro(retro_fp, &genome);

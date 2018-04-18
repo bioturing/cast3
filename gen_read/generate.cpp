@@ -144,12 +144,13 @@ double prob_seq_mut[4][5] = {
     {0.115669720635526, 0.338093421976441, 0.854613457687941, 0, 1}
 };
 
-std::default_random_engine generator;
+std::random_device rd;
+std::mt19937 generator(rd());
 std::string ascii_char = "ACGTN";
 
 generate_t::generate_t(const char *bx_path, const char *hap1_path, const char *bed1_path,
                        const char *hap2_path, const char *bed2_path, const char *fai_path)
-: hap1(hap1_path, bed1_path, fai_path), hap2(hap1_path, bed2_path, fai_path)
+: hap1(hap1_path, bed1_path, fai_path, 1), hap2(hap2_path, bed2_path, fai_path, 2)
 {
     fprintf(stderr, "Loading barcode ... ");
     std::ifstream fi(bx_path);
@@ -180,7 +181,7 @@ molecule_t generate_t::generate_molecule(int read_len)
 
     /* get pos */
     ret.hap = uniform_01(generator);
-    std::uniform_int_distribution<int64_t> uniform_dis(0, ret.hap ?
+    std::uniform_int_distribution<int64_t> uniform_dis(1, ret.hap ?
                                                        hap1.get_chr_pos_back() - 1 :
                                                        hap2.get_chr_pos_back() - 1);
     std::pair<int, int> rp;
@@ -192,6 +193,9 @@ molecule_t generate_t::generate_molecule(int read_len)
     }
     ret.tid = rp.first;
     ret.start_pos = rp.second;
+    /* ret.start_pos is base-1, chr is base-0 */
+    assert(ret.start_pos - 1 + mole_len <= (ret.hap ? hap1.get_chr_size(ret.tid) : 
+                                                      hap2.get_chr_size(ret.tid)));
     return ret;
 }
 
@@ -285,7 +289,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
         int pos, isize;
 
         for (auto &mole : ret) {
-            genome_t &hap = mole.hap == 0 ? hap1 : hap2;
+            genome_t &hap = mole.hap ? hap1 : hap2;
             for (j = 0; j < mole.n_read_pair; ++j) {
                 std::uniform_int_distribution<int> uniform_dis(0, mole.len - 1);
                 std::string barcode = gen_barcode_error(barcode_lst[i]);
@@ -295,8 +299,10 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                     if (pos + isize + read_len <= mole.len)
                         break;
                 }
-                seq1 = hap.get_sub_chr(mole.tid, mole.start_pos + pos, read_len - BARCODE_SZ);
-                seq2 = hap.get_sub_chr(mole.tid, mole.start_pos + pos + isize, read_len);
+
+                /* ret.start_pos is base-1, chr is base-0 */
+                seq1 = hap.get_sub_chr(mole.tid, mole.start_pos - 1 + pos, read_len - BARCODE_SZ);
+                seq2 = hap.get_sub_chr(mole.tid, mole.start_pos - 1 + pos + isize, read_len);
                 gen_read_error(seq1, seq2);
 
                 /* output read */

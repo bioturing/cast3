@@ -11,7 +11,7 @@ std::string get_chr_name(std::string &s)
     return s.substr(1, (s.find(" ") == std::string::npos ? s.size() : s.find(" ")) - 1);
 }
 
-genome_t::genome_t(const char *fa_path, const char *bed_path, const char *fai_path)
+genome_t::genome_t(const char *fa_path, const char *bed_path, const char *fai_path, int _id) : id(_id)
 {
     fprintf(stderr, "Loading genome ... ");
     std::ifstream fi(fa_path);
@@ -20,7 +20,7 @@ genome_t::genome_t(const char *fa_path, const char *bed_path, const char *fai_pa
         exit(EXIT_FAILURE);
     }
     std::string s, seq, cur_name;
-    int64_t pos = 0;
+    int64_t pos = 1;
     chr.clear();
     chr_pos.clear();
     ref_name.clear();
@@ -71,7 +71,7 @@ std::pair<int, int> genome_t::check_pos(int64_t pos, int len)
 {
     auto up = std::upper_bound(chr_pos.begin(), chr_pos.end(), pos);
     assert(up != chr_pos.end());
-    if (pos + len >= *up)
+    if (pos + len > *up)
         return std::make_pair(-1, -1);
     int tid = up - chr_pos.begin();
     return std::make_pair(tid, tid == 0 ? pos : pos - *(--up));
@@ -86,6 +86,12 @@ std::string genome_t::get_ref_name(int id)
 {
     assert(id < (int)ref_name.size());
     return ref_name[id];
+}
+
+int genome_t::get_chr_size(int id)
+{
+    assert(id < (int)chr.size());
+    return chr[id].size();
 }
 
 std::string genome_t::get_sub_chr(int id, int pos, int len)
@@ -238,6 +244,7 @@ void genome_t::load_bed(const char *file_path)
     int lpos, rpos, ltid, i;
 
     while (fi >> lref >> lpos >> rref >> rpos >> type) {
+        ++lpos, ++rpos;
         if (type == "SNP") {
             continue;
         } else if (type == "INV") {
@@ -273,15 +280,16 @@ void genome_t::load_bed(const char *file_path)
         int pos = 0;
         for (auto &item : segment[i]) {
             item.pos = pos;
-            pos += item.end - item.start;
+            pos += abs(item.end - item.start);
         }
-        // std::cerr << i << " " << pos << std::endl;
+        // std::cerr << get_ref_name(i) << " " << pos << " " << (int)chr[i].size() << std::endl;
+        assert(pos == (int)chr[i].size());
     }
 
     /* debug purpose */
     // std::ofstream fo("debug_segment");
     // for (int i = 0; i < (int)segment.size(); ++i) {
-    //     fo << i << endl;
+    //     fo << i << std::endl;
     //     for (auto &x : segment[i]) {
     //         fo << "\t" << x.start << ", " << x.end << ", " << x.ref
     //            << ", " << x.pos << ", " << get_type(x.type) << "\n";
@@ -299,6 +307,9 @@ std::string genome_t::convert(int tid, int pos1, int len1, int pos2, int len2)
     int lo, hi, mid, is_first;
     std::string new_pos1, new_pos2;
     auto &chr = segment[tid];
+
+    int old_pos2 = pos2, old_pos1 = pos1;
+    int old_len2 = len2, old_len1 = len1;
 
     /* first pos */
     lo = 0, hi = (int)chr.size() - 1;
@@ -326,6 +337,9 @@ std::string genome_t::convert(int tid, int pos1, int len1, int pos2, int len2)
         new_pos1 += chr[lo].ref + ":" + std::to_string(chr[lo].start + diff) + ":" +
                     std::to_string(len - diff) + ":" + get_type(chr[lo].type);
         len1 -= len - diff;
+        if (lo + 1 == (int)chr.size())
+            std::cerr << old_pos1 << " " << old_len1 << " " << get_ref_name(tid) << " "
+                      << id << " " << std::endl;
         assert(lo + 1 < (int)chr.size());
         pos1 = chr[lo + 1].pos;
     }
@@ -356,6 +370,9 @@ std::string genome_t::convert(int tid, int pos1, int len1, int pos2, int len2)
         new_pos2 += chr[lo].ref + ":" + std::to_string(chr[lo].start + diff) + ":" +
                     std::to_string(len - diff) + ":" + get_type(chr[lo].type);
         len2 -= len - diff;
+        if (lo + 1 == (int)chr.size())
+            std::cerr << old_pos2 << " " << old_len2 << " " << get_ref_name(tid) << " "
+                      << id << " " << std::endl;
         assert(lo + 1 < (int)chr.size());
         pos2 = chr[lo + 1].pos;
     }

@@ -37,15 +37,17 @@ private:
     std::vector<std::string> ref_name;
     std::vector<int64_t> chr_pos;
     std::vector<std::vector<segment_t> > segment;
+    int id;
 
     void load_bed(const char *file_path);
 
 public:
-    genome_t(const char *fa_path, const char *bed_path, const char *fai_path);
+    genome_t(const char *fa_path, const char *bed_path, const char *fai_path, int _id);
     std::pair<int, int> check_pos(int64_t pos, int len);
     int64_t get_chr_pos_back();
     int get_tid(const std::string &s);
     std::string get_ref_name(int id);
+    int get_chr_size(int id);
     std::string get_sub_chr(int id, int pos, int len);
     std::string convert(int tid, int pos1, int len1, int pos2, int len2);
 };

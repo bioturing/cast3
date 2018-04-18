@@ -88,7 +88,6 @@ def cast3_gen(args):
     for f in [".hapA.bed", ".hapA.fasta", ".hapB.bed", ".hapB.fasta"]:
         cmd.append("%s/%s%s" %(args.outdir, args.prefix, f))
 
-    print " ".join(cmd)
     #### Generate the sequences
     try:
         val = subprocess.Popen(cmd)

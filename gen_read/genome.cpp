@@ -99,7 +99,6 @@ std::string get_type(int type)
 {
     switch (type) {
     case NOR: return "NOR"; break;
-    case TRA: return "TRA"; break;  
     case INV: return "INV"; break;
     case DEL: return "DEL"; break;
     case INS: return "INS"; break;
@@ -110,6 +109,7 @@ std::string get_type(int type)
 
 void process_inv(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
+    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -137,6 +137,7 @@ void process_inv(const std::string &ref, int lpos, int rpos, std::vector<segment
 
 void process_del(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
+    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -161,36 +162,9 @@ void process_del(const std::string &ref, int lpos, int rpos, std::vector<segment
     }
 }
 
-void process_tra(const std::string &ref, int lpos, int rpos, const std::string &n_ref,
-                 int n_lpos, int n_rpos, std::vector<segment_t> &chr)
-{
-    int found = 0;
-    int old_start, old_end;
-    std::vector<segment_t>::iterator it;
-
-    for (it = chr.begin(); it != chr.end(); ++it) {
-        if (it->type != NOR)
-            continue;
-        if (it->start <= lpos && it->end >= rpos) {
-            old_start = it->start;
-            old_end = it->end;
-            it = chr.erase(it);
-            it = chr.insert(it, segment_t(rpos, old_end, ref, NOR));
-            it = chr.insert(it, segment_t(n_lpos, n_rpos, n_ref, TRA));
-            chr.insert(it, segment_t(old_start, lpos, ref, NOR));
-            found = 1;
-            break;
-        }
-    }
-    if (!found) {
-        fprintf(stderr, "%s %d %d\n", ref.c_str(), lpos, rpos);
-        fprintf(stderr, "Segment not found (TRA)!\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
 void process_ins(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
+    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -218,6 +192,7 @@ void process_ins(const std::string &ref, int lpos, int rpos, std::vector<segment
 
 void process_dup(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
+    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -229,9 +204,11 @@ void process_dup(const std::string &ref, int lpos, int rpos, std::vector<segment
             old_start = it->start;
             old_end = it->end;
             it = chr.erase(it);
-            it = chr.insert(it, segment_t(rpos, old_end, ref, NOR));
+            if (lpos < old_end)
+                it = chr.insert(it, segment_t(lpos, old_end, ref, NOR));
             it = chr.insert(it, segment_t(lpos, rpos, ref, DUP));
-            chr.insert(it, segment_t(old_start, rpos, ref, NOR));
+            if (old_start < lpos)
+                chr.insert(it, segment_t(old_start, lpos, ref, NOR));
             found = 1;
             break;
         }
@@ -261,8 +238,8 @@ void genome_t::load_bed(const char *file_path)
         exit(EXIT_FAILURE);
     }
 
-    std::string lref, rref, n_lref, n_rref, type, n_type;
-    int lpos, rpos, ltid, rtid, n_lpos, n_rpos, i;
+    std::string lref, rref, type;
+    int lpos, rpos, ltid, i;
 
     while (fi >> lref >> lpos >> rref >> rpos >> type) {
         --lpos, --rpos;
@@ -281,20 +258,6 @@ void genome_t::load_bed(const char *file_path)
             ltid = get_tid(lref);
             process_del(lref, lpos, rpos, segment[ltid]);
             continue;
-        }
-        if (type == "TRA") {
-            fi >> n_lref >> n_lpos >> n_rref >> n_rpos >> n_type;
-            --n_lpos, --n_rpos;
-            assert(n_type == type);
-            assert(lref == n_lref && rref == n_rref);
-            assert(lpos < n_lpos && rpos < n_rpos);
-            ltid = get_tid(lref);
-            rtid = get_tid(rref);
-            if (ltid == rtid)
-                assert(lpos > n_rpos || n_lpos < rpos);
-
-            process_tra(lref, lpos, n_lpos, rref, rpos, n_rpos, segment[ltid]);
-            process_tra(rref, rpos, n_rpos, lref, lpos, n_lpos, segment[rtid]);
         }
         if (type == "DUP") {
             assert(lref == rref);

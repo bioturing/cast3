@@ -11,8 +11,7 @@
 #define INV                         1
 #define INS                         2
 #define DUP                         3
-#define TRA                         4
-#define DEL                         5
+#define DEL                         4
 
 struct segment_t {
     /* start - end is 1-base, pos is 0-base */

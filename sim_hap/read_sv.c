@@ -99,7 +99,7 @@ void seg2fasta(struct seg_t *seg, int n_seg, int idx, struct genome_t *genome, F
 	
 	for (i = k = 0; i < n_seg; ++i, ++seg) {
 		if (seg->strand == '-') {
-			for (j = seg->end; j > seg->start; --j) {
+			for (j = seg->end - 1; j >= seg->start; --j) {
 				c = seg->seq[j];
 				c = nt4_table[c] == 4 ? 4 : 3 - nt4_table[c];
 				fputc(nt_char[c], fp);
@@ -211,7 +211,7 @@ void sim_sv(struct sv_t *svs, int n_sv, struct genome_t *genome, FILE *hap_f, FI
 				sv->start, genome->ref_name[tid],
 				sv->start + (retros[idx].end - retros[idx].start)); 
 		} else if (IS_SINS(sv)) {
-			PUSH_SEG(tid, sv->start, sv->end, sv->seq, '-');
+			PUSH_SEG(tid, sv->start, sv->end, sv->seq, '+');
 			prev[tid] = sv->start;
 			fprintf(bed_f, "%s\t%d\t%s\t%d\tINS\n", genome->ref_name[tid],
 				sv->start, genome->ref_name[tid], sv->end);

@@ -109,7 +109,6 @@ std::string get_type(int type)
 
 void process_inv(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
-    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -137,7 +136,6 @@ void process_inv(const std::string &ref, int lpos, int rpos, std::vector<segment
 
 void process_del(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
-    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -164,7 +162,6 @@ void process_del(const std::string &ref, int lpos, int rpos, std::vector<segment
 
 void process_ins(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
-    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -192,7 +189,6 @@ void process_ins(const std::string &ref, int lpos, int rpos, std::vector<segment
 
 void process_dup(const std::string &ref, int lpos, int rpos, std::vector<segment_t> &chr)
 {
-    assert(lpos < rpos);
     int found = 0;
     int old_start, old_end;
     std::vector<segment_t>::iterator it;
@@ -242,36 +238,34 @@ void genome_t::load_bed(const char *file_path)
     int lpos, rpos, ltid, i;
 
     while (fi >> lref >> lpos >> rref >> rpos >> type) {
-        --lpos, --rpos;
-        if (type == "SNP")
+        if (type == "SNP") {
             continue;
-        if (type == "INV") {
+        } else if (type == "INV") {
             assert(lref == rref);
             assert(lpos < rpos);
             ltid = get_tid(lref);
             process_inv(lref, lpos, rpos, segment[ltid]);
             continue;
-        }
-        if (type == "DEL") {
+        } else if (type == "DEL") {
             assert(lref == rref);
             assert(lpos < rpos);
             ltid = get_tid(lref);
             process_del(lref, lpos, rpos, segment[ltid]);
             continue;
-        }
-        if (type == "DUP") {
+        } else if (type == "DUP") {
             assert(lref == rref);
             assert(lpos < rpos);
             ltid = get_tid(lref);
             process_dup(lref, lpos, rpos, segment[ltid]);
             continue;
-        }
-        if (type == "INS") {
+        } else if (type == "INS") {
             assert(lref == rref);
             assert(lpos < rpos);
             ltid = get_tid(lref);
             process_ins(lref, lpos, rpos, segment[ltid]);
             continue;
+        } else {
+            assert(false);
         }
     }
 
@@ -281,17 +275,20 @@ void genome_t::load_bed(const char *file_path)
             item.pos = pos;
             pos += item.end - item.start;
         }
+        // std::cerr << i << " " << pos << std::endl;
     }
 
     /* debug purpose */
-    // for (int i = 0; i < (int)genome.size(); ++i) {
-    //  cout << i << endl;
-    //  for (auto &x : genome[i]) {
-    //      cout << "\t" << x.start << ", " << x.end << ", " << x.ref
-    //           << ", " << x.pos << ", " << get_type(x.type) << "\n";
-    //  }
+    // std::ofstream fo("debug_segment");
+    // for (int i = 0; i < (int)segment.size(); ++i) {
+    //     fo << i << endl;
+    //     for (auto &x : segment[i]) {
+    //         fo << "\t" << x.start << ", " << x.end << ", " << x.ref
+    //            << ", " << x.pos << ", " << get_type(x.type) << "\n";
+    //     }
     // }
-    // cout << "----------------------------------\n";
+    // fo << "----------------------------------\n";
+    // fo.close();
 
     fi.close();
     fprintf(stderr, "done\n");

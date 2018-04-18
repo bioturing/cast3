@@ -154,8 +154,7 @@ void sim_sv(struct sv_t *svs, int n_sv, struct genome_t *genome, FILE *hap_f, FI
 	};								\
 } while (0);
 
-	int i, tid;
-	struct sv_t *sv = svs;
+	int i, u, v, tid;
 	struct seg_t *segs[genome->sz];
 	int seg_cnt[genome->sz], prev[genome->sz];
 
@@ -166,19 +165,21 @@ void sim_sv(struct sv_t *svs, int n_sv, struct genome_t *genome, FILE *hap_f, FI
 
 	/* sort structural variants by its chromosome then pos */
 	qsort(svs, n_sv, sizeof(struct sv_t), comp_sv);
+	u = v = 0;
+	while (u < n_sv) {
+		++v;
+		while (v < n_sv && svs[v].chr == svs[u].chr &&
+		       svs[v].start <= svs[u].end)
+			++v;
+		if (v == n_sv)
+			break;
+		svs[++u] = svs[v];
+	}
+	n_sv = u;
+	struct sv_t *sv = svs;
 
 	while (sv - svs < n_sv) {
 		tid = sv->chr;
-
-		/* remove overlap regions */
-		if (sv->start <= prev[tid]) {
-			fprintf(stderr,
-				"Warnning: overlap structural variants %s:%d-%d, skipping!\n",
-				genome->ref_name[tid], sv->start, sv->end);
-			++sv;
-			continue;
-		}
-
 		PUSH_SEG(tid, prev[tid], sv->start, genome->seq[tid], '+');
 
 		if (IS_DEL(sv)) {

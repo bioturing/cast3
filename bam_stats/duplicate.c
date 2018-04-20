@@ -21,7 +21,7 @@ static void assign_alg(bam1_t *b, int bxid, struct alg_inf_t *p)
 	p->len = b->core.l_qseq;
 	p->bxid = bxid;
 	p->cigar = malloc(b->core.n_cigar * sizeof(uint32_t));
-	memcpy(p->cigar, bam1_cigar(b), b->core.n_cigar * sizeof(uint32_t));
+	memcpy(p->cigar, bam_get_cigar(b), b->core.n_cigar * sizeof(uint32_t));
 }
 
 void checkdup_process(struct summary_t *chr_st, int n_alg_inf,

@@ -1,6 +1,6 @@
 #include "read_stats.h"
 #include "molecule.h"
-#include "../lib/bam.h"
+#include "htslib/sam.h"
 
 static int **cell;
 

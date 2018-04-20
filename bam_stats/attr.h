@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "../lib/bam.h"
+#include "htslib/sam.h"
 
 /* Sam flag */
 #define FLAG_PAIR		0x001	/* Read has its mate */
@@ -31,8 +31,8 @@
 
 struct bam_inf_t {
 	char *bam_path;
-	bam_index_t *bam_i;
-	bam_header_t *b_hdr;
+	hts_idx_t *bam_i;
+	bam_hdr_t *b_hdr;
 	int cur_id;
 };
 

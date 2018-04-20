@@ -1,7 +1,7 @@
 #ifndef _READ_STATS_H_
 #define _READ_STATS_H_
 
-#include "../lib/utils.h"
+#include "utils.h"
 
 #include "attr.h"
 

@@ -1,40 +1,10 @@
-#include "../lib/khash.h"
+#include "htslib/khash.h"
 
 #include "attr.h"
 #include "duplicate.h"
 #include "molecule.h"
 #include "read_stats.h"
 #include "khash_barcode.h"
-
-/* how to get align element:
- * name:     %s, bam1_qname(b)
- *
- * flag:     %d, b->core.flag
- *
- * tid:      %d, b->core.tid (its name get from bam header)
- *
- * pos:      %d, b->core.pos
- *
- * qual:     %d, b->core.qual
- *
- * cigar:    uint32_t *cigar = bam1_cigar(b) 
- *           %d%c, bam_cigar_oplen(cigar[i]), bam_cigar_opchr(cigar[i])
- *
- * mtid:     %d, b->core.mtid (its name get from bam header)
- *
- * mpos:     %d, b->core.mpos
- *
- * ins_sz:   %d, b->core.isize
- *
- * seq:      uint8_t *seq = bam1_seq(b)
- *           %c, bam_nt16_rev_table[bam1_seqi(seq, i)]
- *
- * qual_str: uint8_t *qual = bam1_qual(b)
- *           %c, qual[i] + 33
- *
- * barcode:  tag_data = bam_aux_get(b, "BX");
- *           bar_s = bam_aux2Z(tag_data);
- */
 
 struct prog_args {
 	int nthread;
@@ -227,33 +197,33 @@ struct bam_inf_t init_bam_reader(char *file_name)
 	bam_inf.cur_id = 0;
 
 	/* Open bam file and the index file */
-	bamFile bam_f;
-	if (!(bam_f = bam_open(file_name, "r")))
+	samFile *bam_f;
+	if (!(bam_f = sam_open(file_name, "r")))
 		__perror("Could not open BAM file");
-	if (!(bam_inf.bam_i = bam_index_load(file_name)))
+	if (!(bam_inf.bam_i = sam_index_load(bam_f, file_name)))
 		__error("BAM file must be indexed!");
 
 	/* Init the header */
-	bam_inf.b_hdr = bam_header_read(bam_f);
+	bam_inf.b_hdr = sam_hdr_read(bam_f);
 
-	bam_close(bam_f);
+	sam_close(bam_f);
 	return bam_inf;
 }
 
 static void read_bam_unmapped(struct bam_inf_t *bam_inf)
 {
-	bamFile bam_f = bam_open(bam_inf->bam_path, "r");
-	bam_iter_t iter = bam_iter_query(bam_inf->bam_i, HTS_IDX_NOCOOR, 0, 0);
+	samFile *bam_f = sam_open(bam_inf->bam_path, "r");
+	hts_itr_t *iter = sam_itr_queryi(bam_inf->bam_i, HTS_IDX_NOCOOR, 0, 0);
 	bam1_t *b = bam_init1();
 	int i;
 
 	/* all bam record here is unmapped */
-	while (bam_iter_read(bam_f, iter, b) >= 0) {
+	while (sam_itr_next(bam_f, iter, b) >= 0) {
 		++genome_st.total_read;
 		++genome_st.total_unmap;
 		genome_st.total_len += b->core.l_qseq;
 
-		uint8_t *qual = bam1_qual(b);
+		uint8_t *qual = bam_get_qual(b);
 		assert((b->core.flag & (FLAG_NOT_PRI | FLAG_SUPPLEMENT)) == 0);
 		if (b->core.flag & FLAG_READ1) {
 			for (i = 0; i < b->core.l_qseq; ++i) {
@@ -271,7 +241,7 @@ static void read_bam_unmapped(struct bam_inf_t *bam_inf)
 	}
 }
 
-static void read_bam_target(bam_iter_t iter, bamFile bam_f,
+static void read_bam_target(hts_itr_t *iter, samFile *bam_f,
 			    struct summary_t *chr_st)
 {
 	bam1_t *b = bam_init1();
@@ -281,14 +251,14 @@ static void read_bam_target(bam_iter_t iter, bamFile bam_f,
 	struct alg_inf_t *alg_inf = NULL;
 	khash_t(khash_str) *bx_kh = kh_init(khash_str);
 
-	while (bam_iter_read(bam_f, iter, b) >= 0) {
+	while (sam_itr_next(bam_f, iter, b) >= 0) {
 		/* skip align is supplementary or not primary */
 		if (b->core.flag & (FLAG_NOT_PRI | FLAG_SUPPLEMENT))
 			continue;	
 		++chr_st->total_read;
 		chr_st->total_len += b->core.l_qseq;
 
-		uint8_t *qual = bam1_qual(b);
+		uint8_t *qual = bam_get_qual(b);
 		if (b->core.flag & FLAG_READ1) {
 	 		for (i = 0; i < b->core.l_qseq; ++i) {
 	 			++chr_st->nbase_r1;
@@ -338,8 +308,8 @@ static void read_bam_target(bam_iter_t iter, bamFile bam_f,
 static void *process(void *data)
 {
 	struct bam_inf_t *bam_inf = (struct bam_inf_t *)data;
-	bamFile bam_f = bam_open(bam_inf->bam_path, "r");
-	bam_iter_t iter;
+	samFile *bam_f = sam_open(bam_inf->bam_path, "r");
+	hts_itr_t *iter;
 	int id;
 
 	do {
@@ -359,7 +329,7 @@ static void *process(void *data)
 		struct summary_t chr_st;
 		memset(&chr_st, 0, sizeof(struct summary_t));
 		chr_st.chr_id = id;
-		iter = bam_iter_query(bam_inf->bam_i, id, 1,
+		iter = sam_itr_queryi(bam_inf->bam_i, id, 1,
 				      bam_inf->b_hdr->target_len[id]);
 		read_bam_target(iter, bam_f, &chr_st);
 		__verbose("Done chr %s in %.2fs.\n",
@@ -367,7 +337,7 @@ static void *process(void *data)
 			  realtime() - local_time);
 	} while (1);
 
-	bam_close(bam_f);
+	sam_close(bam_f);
 }
 
 static void read_bam(struct bam_inf_t *bam_inf)
@@ -457,7 +427,7 @@ static void print_usage()
 {
 	__verbose("./bstats <option> genome_file bam_file\n");
 	__verbose("\n");
-	__verbose("input bam_file is sorted by position and must be index\n");
+	__verbose("input bam_file must be indexed\n");
 	__verbose("\n");
 	__verbose("option:\n");
 	__verbose("  -t INT           number of threads [1]\n");

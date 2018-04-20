@@ -1,7 +1,7 @@
 #ifndef _KHASH_BARCODE_H_
 #define _KHASH_BARCODE_H_
 
-#include "../lib/khash.h"
+#include "htslib/khash.h"
 
 KHASH_MAP_INIT_STR(khash_str, int)
 

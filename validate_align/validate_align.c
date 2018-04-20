@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 
 	fprintf(stderr, "Total reads: %ld\n", nread);
 	fprintf(stderr, "Total correct: %ld\n", ncorrect);
-	fprintf(stderr, "Ratio: %.2f%%\n", 1.0 * ncorrect / nread);
+	fprintf(stderr, "Ratio: %.2f%%\n", 1.0 * ncorrect / nread * 100);
 
 	return 0;
 }

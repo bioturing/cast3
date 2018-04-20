@@ -1,8 +1,8 @@
 #ifndef _MOLECULE_H_
 #define _MOLECULE_H_
 
-#include "../lib/utils.h"
-#include "../lib/khash.h"
+#include "utils.h"
+#include "htslib/khash.h"
 
 #include "attr.h"
 

@@ -183,9 +183,9 @@ molecule_t generate_t::generate_molecule(int read_len)
 
     /* get pos */
     ret.hap = uniform_01(generator);
-    std::uniform_int_distribution<int64_t> uniform_dis(1, ret.hap ?
-                                                       hap1.get_chr_pos_back() - 1 :
-                                                       hap2.get_chr_pos_back() - 1);
+    std::uniform_int_distribution<int64_t> uniform_dis(0, ret.hap ?
+                                                       hap1.get_chr_pos_back():
+                                                       hap2.get_chr_pos_back());
     std::pair<int, int> rp;
     while (1) {
         rp = ret.hap ? hap1.check_pos(uniform_dis(generator), mole_len) :

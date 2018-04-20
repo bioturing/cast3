@@ -20,7 +20,7 @@ genome_t::genome_t(const char *fa_path, const char *bed_path, const char *fai_pa
         exit(EXIT_FAILURE);
     }
     std::string s, seq, cur_name;
-    int64_t pos = 1;
+    int64_t pos = 0;
     chr.clear();
     chr_pos.clear();
     ref_name.clear();

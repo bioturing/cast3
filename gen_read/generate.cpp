@@ -184,8 +184,8 @@ molecule_t generate_t::generate_molecule(int read_len)
     /* get pos */
     ret.hap = uniform_01(generator);
     std::uniform_int_distribution<int64_t> uniform_dis(0, ret.hap ?
-                                                       hap1.get_chr_pos_back():
-                                                       hap2.get_chr_pos_back());
+                                                       hap1.get_chr_pos_back() - 1:
+                                                       hap2.get_chr_pos_back() - 1);
     std::pair<int, int> rp;
     while (1) {
         rp = ret.hap ? hap1.check_pos(uniform_dis(generator), mole_len) :
@@ -310,8 +310,8 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                 }
 
                 /* ret.start_pos is base-1, chr is base-0 */
-                seq1 = hap.get_sub_chr(mole.tid, mole.start_pos - 1 + pos, read_len - BARCODE_SZ);
-                seq2 = hap.get_sub_chr(mole.tid, mole.start_pos - 1 + pos + isize, read_len);
+                seq1 = hap.get_sub_chr(mole.tid, mole.start_pos + pos, read_len - BARCODE_SZ);
+                seq2 = hap.get_sub_chr(mole.tid, mole.start_pos + pos + isize, read_len);
                 gen_read_error(seq1, seq2);
 
                 /* output read */

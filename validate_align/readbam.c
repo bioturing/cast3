@@ -11,6 +11,8 @@ int get_tid(char *s)
 
 char *get_name(int tid)
 {
+	if (tid == -1)
+		return "*";
 	return b_hdr->target_name[tid];
 }
 
@@ -45,6 +47,10 @@ char *convert_scigar(uint32_t *bcigar, int sz)
 void sam_write(FILE *fp, bam1_t *b)
 {
 	uint8_t *tag_data = bam_aux_get(b, "BX");
+	if (!tag_data) {
+		fprintf(stderr, "Error: Please add barcode info to your sam record (tag BX:Z)\n");
+		exit(EXIT_FAILURE);
+	}
 	char *bar_code = bam_aux2Z(tag_data);
 	char *alternative = NULL;
 	tag_data = bam_aux_get(b, "XA");

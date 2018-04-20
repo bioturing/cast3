@@ -14,7 +14,7 @@ struct record {
 
 int parse_mlc_id(char *s, int *pos)
 {
-	int u = 0, v = 0;
+	int v = 0;
 	while (s[v] != '|')
 		++v;
 	s[v] = '\0';
@@ -147,7 +147,10 @@ int main(int argc, char *argv[])
 	char path[4096];
 	sprintf(path, "%s.fail.txt", argv[1]);
 	f_fail = fopen(path, "w");
-
+	if (!f_fail.is_open()) {
+		fprintf(stderr, "Error: Could not open file for writing\n");
+		exit(EXIT_FAILURE);
+	}
 	process(argv[1]);
 
 	fprintf(stderr, "Total reads: %ld\n", nread);

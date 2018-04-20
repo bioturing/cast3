@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 	char path[4096];
 	sprintf(path, "%s.fail.txt", argv[1]);
 	f_fail = fopen(path, "w");
-	if (!f_fail.is_open()) {
+	if (!f_fail) {
 		fprintf(stderr, "Error: Could not open file for writing\n");
 		exit(EXIT_FAILURE);
 	}

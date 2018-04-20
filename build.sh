@@ -1,8 +1,10 @@
 #!/bin/bash
 
-mkdir -p bin
+git submodule init && git submodule update
 
-cd lib/htslib && autoheader && autoconf && ./configure && make && cd ../../
+cd htslib && autoheader && autoconf && ./configure && make && cd ../../
+
+mkdir -p bin
 
 cd gen_read && make && cd ../
 

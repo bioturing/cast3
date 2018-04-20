@@ -87,7 +87,7 @@ void check_align(bam1_t *b)
 		found = 0;
 		for (i = 0; i < i1; ++i) {
 			if (get_tid(record1[i].ref) == tid &&
-			    abs(record1[i].pos - pos) < DIFF_ALLOW) {
+			    abs(record1[i].pos - pos + 1) < DIFF_ALLOW) {
 				found = 1;
 				break;
 			}
@@ -105,7 +105,7 @@ void check_align(bam1_t *b)
 		found = 0;
 		for (i = 0; i < i2; ++i) {
 			if (get_tid(record2[i].ref) == tid &&
-			    abs(record2[i].pos - pos) < DIFF_ALLOW) {
+			    abs(record2[i].pos - pos + 1) < DIFF_ALLOW) {
 				found = 1;
 				break;
 			}

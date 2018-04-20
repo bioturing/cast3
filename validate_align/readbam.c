@@ -57,7 +57,7 @@ void sam_write(FILE *fp, bam1_t *b)
 	if (tag_data)
 		alternative = bam_aux2Z(tag_data);
 	fprintf(fp, "%d\t%s\t%d\t%s\t%s\t%s\n",
-		b->core.flag, get_name(b->core.tid), b->core.pos,
+		b->core.flag, get_name(b->core.tid), b->core.pos + 1,
 		convert_scigar(bam_get_cigar(b), b->core.n_cigar),
 		bar_code, alternative);
 }

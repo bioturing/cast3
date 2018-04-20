@@ -147,6 +147,7 @@ double prob_seq_mut[4][5] = {
 std::random_device rd;
 std::mt19937 generator(rd());
 std::string ascii_char = "ACGTN";
+std::string rev_ascii_char = "TGCAN";
 
 generate_t::generate_t(const char *bx_path, const char *hap1_path, const char *bed1_path,
                        const char *hap2_path, const char *bed2_path, const char *fai_path)
@@ -274,6 +275,15 @@ void gen_read_error(std::string &seq1, std::string &seq2)
     }
 }
 
+std::string reverse_complement(std::string &s)
+{
+    std::string ret;
+    for (int i = 0, j = (int)s.size() - 1; i < (int)s.size(); ++i, --j) {
+        ret += rev_ascii_char[ascii_char[(int)s[j]]];
+    }
+    return ret;
+}
+
 void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx)
 {
     std::normal_distribution<double> normal_dis(NORMAL_MEAN, NORMAL_STDDEV);
@@ -312,6 +322,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                 /* ret.start_pos is base-1, chr is base-0 */
                 seq1 = hap.get_sub_chr(mole.tid, mole.start_pos + pos, read_len - BARCODE_SZ);
                 seq2 = hap.get_sub_chr(mole.tid, mole.start_pos + pos + isize, read_len);
+                seq2 = reverse_complement(seq2);
                 gen_read_error(seq1, seq2);
 
                 /* output read */

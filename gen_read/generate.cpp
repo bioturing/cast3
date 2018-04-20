@@ -295,8 +295,8 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
             genome_t &hap = mole.hap ? hap1 : hap2;
 
             /* output molecule data */
-            fi_mlc << mlc_id << "\t" << (mole.hap ? "1" : "2") << "\t" <<
-                   << get_ref_name(mole.tid) << "\t" << mole.start_pos << "\t"
+            fi_mlc << mlc_id << "\t" << (mole.hap ? "1" : "2") << "\t"
+                   << hap.get_ref_name(mole.tid) << "\t" << mole.start_pos << "\t"
                    << mole.len << "\t" << mole.n_read_pair << "\n";
 
             for (j = 0; j < mole.n_read_pair; ++j) {
@@ -317,9 +317,9 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                 /* output read */
                 std::string name = hap.convert(mole.tid, mole.start_pos + pos, read_len - BARCODE_SZ,
                                                mole.start_pos + pos + isize, read_len);
-                name = to_string(mlc_id) + "|" + name;
+                name = std::to_string(mlc_id) + "|" + name;
 
-                printf("%s/1\tBX:%s\tQB:", name.c_str(), barcode.c_str());
+                printf("@%s/1\tBX:%s\tQB:", name.c_str(), barcode.c_str());
                 for (k = 0; k < BARCODE_SZ; ++k)
                     printf("#");
                 printf("\n");
@@ -328,7 +328,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                     printf("#");
                 printf("\n");
 
-                printf("%s/2\tBX:%s\tQB:", name.c_str(), barcode.c_str());
+                printf("@%s/2\tBX:%s\tQB:", name.c_str(), barcode.c_str());
                 for (k = 0; k < BARCODE_SZ; ++k)
                     printf("#");
                 printf("\n");

@@ -378,5 +378,5 @@ std::string genome_t::convert(int tid, int pos1, int len1, int pos2, int len2)
     }
 
     /* result after convert */
-    return "@" + new_pos1 + "|" + new_pos2;
+    return new_pos1 + "|" + new_pos2;
 }

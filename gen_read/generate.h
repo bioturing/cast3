@@ -28,7 +28,6 @@
 #define MAX_MLC_LEN                 1000000
 
 struct molecule_t {
-    std::ofstream fi_mlc;
     int n_read_pair;
     int len;
     int start_pos;
@@ -49,6 +48,7 @@ class generate_t {
 private:
     std::vector<std::string> barcode_lst;
     genome_t hap1, hap2;
+    std::ofstream fi_mlc;
 
     molecule_t generate_molecule(int read_len);
     std::vector<molecule_t> generate_barcode(int read_len, int &total_read, int mean_mlc_per_bx);

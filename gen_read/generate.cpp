@@ -324,7 +324,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                     printf("#");
                 printf("\n");
                 printf("%s\n+\n", seq1.c_str());
-                for (k = 0; k < read_len; ++k)
+                for (k = 0; k < read_len - BARCODE_SZ; ++k)
                     printf("#");
                 printf("\n");
 

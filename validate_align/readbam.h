@@ -1,8 +1,13 @@
 #ifndef _READBAM_H_
 #define _READBAM_H_
 
-#include "../lib/bam.h"
-#include "../lib/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <assert.h>
+
+#include "htslib/sam.h"
 
 int get_tid(char *s);
 

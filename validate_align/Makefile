@@ -1,16 +1,12 @@
-INCLUDE_LIB =		-I ../lib/htslib -I ../lib/samtools
+CC_FLAG = 		-Wall -pthread -Wfatal-errors -O2
 
-CC_FLAG = 		-Wall -pthread -Wfatal-errors -O2 $(INCLUDE_LIB)
+INCLUDE_LIB =		-I ../htslib
 
-HTSLIB =		-L ../lib/htslib
+HTSLIB =		-L ../htslib
 
-OBJ_MAIN =		bam.o 			\
-			readbam.o		\
-			utils.o
+OBJ_MAIN =		readbam.o
 
 bam_stats:
-	gcc $(CC_FLAG) -c -o utils.o ../lib/utils.c
-	gcc $(CC_FLAG) -c -o bam.o ../lib/bam.c
-	gcc $(CC_FLAG) -c -o readbam.o readbam.c
-	gcc $(CC_FLAG) $(HTSLIB) $(OBJ_MAIN) validate_align.c -o ../bin/validate_align -lz -lhts
+	gcc $(CC_FLAG) $(HTSLIB) $(INCLUDE_LIB) -c -o readbam.o readbam.c
+	gcc $(CC_FLAG) $(HTSLIB) $(INCLUDE_LIB) $(OBJ_MAIN) validate_align.c -o ../bin/validate_align -lz -lhts
 	rm -rf *.o

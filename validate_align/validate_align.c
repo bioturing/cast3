@@ -1,6 +1,6 @@
 #include "readbam.h"
 
-#define DIFF_ALLOW		1000
+#define DIFF_ALLOW		100
 
 int64_t ncorrect, nread;
 FILE *f_fail;
@@ -11,6 +11,16 @@ struct record {
 	int len;
 	char *type;
 };
+
+int get_mid parse_mlc_id(char *s, int *pos)
+{
+	int u = 0, v = 0;
+	while (s[v] != '|')
+		++v;
+	s[v] = '\0';
+	*pos = v + 1;
+	return atoi(s);
+}
 
 struct record parse_record(char *s, int *pos, int *end)
 {
@@ -31,9 +41,9 @@ struct record parse_record(char *s, int *pos, int *end)
 	s[v] = '\0';
 	ret.len = atoi(s + u);
 	u = ++v;
-	while (s[v] != '_' && s[v] != '|')
+	while (s[v] != '_' && s[v] != '|' && s[v] != '\0')
 		++v;
-	if (s[v] == '|')
+	if (s[v] == '|' || s[v] == '\0')
 		*end = 1;
 	else
 		*end = 0;
@@ -47,23 +57,26 @@ struct record parse_record(char *s, int *pos, int *end)
 void check_align(bam1_t *b)
 {
 	struct record record1[100], record2[100];
-	int flag, pos, tid, i, i1, i2, spos, end, found;
+	int flag, pos, tid, mid, i, i1, i2, spos, end, found;
 	char *seq;
 
-	seq = bam1_qname(b);
+	seq = bam_get_qname(b);
 	char *tmp = strdup(seq);
 	flag = b->core.flag;
 	pos = b->core.pos;
 	tid = b->core.tid;
 
 	i1 = 0, spos = 0, end = 0;
+	mid = parse_mlc_id(seq, &spos);
 	while (1) {
+		assert(i1 < 100);
 		record1[i1++] = parse_record(seq, &spos, &end);
 		if (end)
 			break;
 	}
 	i2 = 0, end = 0;
 	while (1) {
+		assert(i2 < 100);
 		record2[i2++] = parse_record(seq, &spos, &end);
 		if (end)
 			break;
@@ -137,9 +150,9 @@ int main(int argc, char *argv[])
 
 	process(argv[1]);
 
-	__verbose("Total reads: %ld\n", nread);
-	__verbose("Total correct: %ld\n", ncorrect);
-	__verbose("Ratio: %.2f%%\n", 1.0 * ncorrect / nread);
+	fprintf(stderr, "Total reads: %ld\n", nread);
+	fprintf(stderr, "Total correct: %ld\n", ncorrect);
+	fprintf(stderr, "Ratio: %.2f%%\n", 1.0 * ncorrect / nread);
 
 	return 0;
 }

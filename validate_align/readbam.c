@@ -6,7 +6,7 @@ static bam_hdr_t *b_hdr;
 int get_tid(char *s)
 {
 	assert(s);
-	return bam_get_tid(b_hdr, s);
+	return bam_name2id(b_hdr, s);
 }
 
 char *get_name(int tid)
@@ -16,8 +16,10 @@ char *get_name(int tid)
 
 void init_bam(char *file_path)
 {
-	if (!(b_f = hts_open(file_path, "r")))
-		__error("Cannot open BAM file: %s", file_path);
+	if (!(b_f = hts_open(file_path, "r"))) {
+		fprintf(stderr, "Error: Cannot open BAM file: %s", file_path);
+		exit(EXIT_FAILURE);
+	}
 	b_hdr = sam_hdr_read(b_f);
 }
 
@@ -50,7 +52,7 @@ void sam_write(FILE *fp, bam1_t *b)
 		alternative = bam_aux2Z(tag_data);
 	fprintf(fp, "%d\t%s\t%d\t%s\t%s\t%s\n",
 		b->core.flag, get_name(b->core.tid), b->core.pos,
-		convert_scigar(bam1_cigar(b), b->core.n_cigar),
+		convert_scigar(bam_get_cigar(b), b->core.n_cigar),
 		bar_code, alternative);
 }
 

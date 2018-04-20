@@ -28,6 +28,7 @@
 #define MAX_MLC_LEN                 1000000
 
 struct molecule_t {
+    std::ofstream fi_mlc;
     int n_read_pair;
     int len;
     int start_pos;

@@ -163,6 +163,8 @@ generate_t::generate_t(const char *bx_path, const char *hap1_path, const char *b
         barcode_lst.push_back(bx);
     fi.close();
     fprintf(stderr, "done\n");
+
+    fi_mlc.open("molecule.inf");
 }
 
 molecule_t generate_t::generate_molecule(int read_len)
@@ -275,7 +277,8 @@ void gen_read_error(std::string &seq1, std::string &seq2)
 void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx)
 {
     std::normal_distribution<double> normal_dis(NORMAL_MEAN, NORMAL_STDDEV);
-    int i, j, k;
+    int i, j, k, mlc_id = 0;
+    fi_mlc << "#mlc_id\thaplotype\tref\tstart_pos\tlen\tn_read_pair\n";
 
     for (i = 0; ; ++i) {
         if (i == (int)barcode_lst.size()) {
@@ -290,6 +293,12 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
 
         for (auto &mole : ret) {
             genome_t &hap = mole.hap ? hap1 : hap2;
+
+            /* output molecule data */
+            fi_mlc << mlc_id << "\t" << (mole.hap ? "1" : "2") << "\t" <<
+                   << get_ref_name(mole.tid) << "\t" << mole.start_pos << "\t"
+                   << mole.len << "\t" << mole.n_read_pair << "\n";
+
             for (j = 0; j < mole.n_read_pair; ++j) {
                 std::uniform_int_distribution<int> uniform_dis(0, mole.len - 1);
                 std::string barcode = gen_barcode_error(barcode_lst[i]);
@@ -308,6 +317,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                 /* output read */
                 std::string name = hap.convert(mole.tid, mole.start_pos + pos, read_len - BARCODE_SZ,
                                                mole.start_pos + pos + isize, read_len);
+                name = to_string(mlc_id) + "|" + name;
 
                 printf("%s/1\tBX:%s\tQB:", name.c_str(), barcode.c_str());
                 for (k = 0; k < BARCODE_SZ; ++k)
@@ -327,6 +337,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                     printf("#");
                 printf("\n");
             }
+            ++mlc_id;
         }
 
         if (total_read <= 0)

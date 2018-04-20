@@ -279,7 +279,7 @@ std::string reverse_complement(std::string &s)
 {
     std::string ret;
     for (int i = 0, j = (int)s.size() - 1; i < (int)s.size(); ++i, --j) {
-        ret += rev_ascii_char[ascii_char[(int)s[j]]];
+        ret += rev_ascii_char[ascii_table[(int)s[j]]];
     }
     return ret;
 }

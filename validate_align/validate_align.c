@@ -12,7 +12,7 @@ struct record {
 	char *type;
 };
 
-int get_mid parse_mlc_id(char *s, int *pos)
+int parse_mlc_id(char *s, int *pos)
 {
 	int u = 0, v = 0;
 	while (s[v] != '|')

@@ -319,7 +319,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                                                mole.start_pos + pos + isize, read_len);
                 name = std::to_string(mlc_id) + "|" + name;
 
-                printf("@%s/1\tBX:%s\tQB:", name.c_str(), barcode.c_str());
+                printf("@%s/1\tBX:Z:%s\tQB:Z:", name.c_str(), barcode.c_str());
                 for (k = 0; k < BARCODE_SZ; ++k)
                     printf("#");
                 printf("\n");
@@ -328,7 +328,7 @@ void generate_t::generate_read(int read_len, int total_read, int mean_mlc_per_bx
                     printf("#");
                 printf("\n");
 
-                printf("@%s/2\tBX:%s\tQB:", name.c_str(), barcode.c_str());
+                printf("@%s/2\tBX:Z:%s\tQB:Z:", name.c_str(), barcode.c_str());
                 for (k = 0; k < BARCODE_SZ; ++k)
                     printf("#");
                 printf("\n");

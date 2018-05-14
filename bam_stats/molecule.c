@@ -1,10 +1,12 @@
 #include "molecule.h"
 #include "khash_barcode.h"
+#include "utils.h"
 
 static int *n_mlc;
-static struct arr_u64_t **mlc;
+static struct arr_pair_t **mlc;
 static int bx_cnt;
 static khash_t(khash_str) *bx_kh;
+static int thres_dis_2read;
 
 static void gem_insert(int bxid, int start, int end, int len, int cnt,
 		       struct summary_t *chr_st)
@@ -61,11 +63,12 @@ void gem_merge(struct summary_t *dest, struct summary_t *src)
 	free(src->barcode);
 }
 
-void mlc_init(int n_chr)
+void mlc_init(int n_chr, int threshold)
 {
 	n_mlc = calloc(n_chr, sizeof(int));
 	mlc = calloc(n_chr, sizeof(struct arr*));
 	bx_kh = kh_init(khash_str);
+	thres_dis_2read = threshold;
 }
 
 void mlc_destroy(int n_chr)
@@ -84,49 +87,46 @@ void mlc_destroy(int n_chr)
 void mlc_insert(int bxid, int pos, int len, struct summary_t *chr_st)
 {
 	int *n = &n_mlc[chr_st->chr_id];
-	struct arr_u64_t **p = &mlc[chr_st->chr_id];
+	struct arr_pair_t **p = &mlc[chr_st->chr_id];
 
 	if (bxid >= *n) {
 		int old_sz = *n;
 		*n = bxid + 1;
-		*p = realloc(*p, *n * sizeof(struct arr_u64_t));
-		memset(*p + old_sz, 0, (*n - old_sz) * sizeof(struct arr_u64_t));
+		*p = realloc(*p, *n * sizeof(struct arr_pair_t));
+		memset(*p + old_sz, 0, (*n - old_sz) * sizeof(struct arr_pair_t));
 	}
 
-	struct arr_u64_t *memb = *p + bxid;
+	struct arr_pair_t *memb = *p + bxid;
 	int start, end, mlc_len;
 
-	if (memb->sz &&
-	    (memb->val[memb->sz - 1] & MASK32) < pos - MLC_LIMIT_DIS_2READ) {
-		end = (memb->val[memb->sz - 1] & MASK32) +
-		      (memb->val[memb->sz - 1] >> SHIFT32);
-		start = (memb->val[0] & MASK32);
+	if (memb->sz && (memb->val[memb->sz - 1].first < pos - thres_dis_2read)) {
+		end = memb->val[memb->sz - 1].first + memb->val[memb->sz - 1].second;
+		start = memb->val[0].first;
 		mlc_len = end - start;
-		if (mlc_len >= MIN_MLC_LEN)
+		if (mlc_len >= MIN_MLC_LEN && memb->sz >= MIN_MLC_READ)
 			gem_insert(bxid, start, end, mlc_len, memb->sz, chr_st);
 		memb->sz = 1;
 		memb->val = realloc(memb->val, sizeof(uint64_t));
-		memb->val[0] = (1ULL * len << SHIFT32) + pos;
+		memb->val[0] = (struct pair_t){.first = pos, .second = len};
 	} else {
 		memb->val = realloc(memb->val, ++memb->sz * sizeof(uint64_t));
-		memb->val[memb->sz - 1] = (1ULL * len << SHIFT32) + pos;
+		memb->val[memb->sz - 1] = (struct pair_t){.first = pos, .second = len};
 	}
 }
 
 void mlc_get_last(struct summary_t *chr_st)
 {
 	int n = n_mlc[chr_st->chr_id];
-	struct arr_u64_t *p = mlc[chr_st->chr_id];
+	struct arr_pair_t *p = mlc[chr_st->chr_id];
 	int i, start, end, mlc_len;
 
 	for (i = 0; i < n; ++i) {
-		struct arr_u64_t *memb = p + i;
+		struct arr_pair_t *memb = p + i;
 		if (memb->sz) {
-			end = (memb->val[memb->sz - 1] & MASK32) +
-			      (memb->val[memb->sz - 1] >> SHIFT32);
-			start = (memb->val[0] & MASK32);
+			end = memb->val[memb->sz - 1].first + memb->val[memb->sz - 1].second;
+			start = memb->val[0].first;
 			mlc_len = end - start;
-			if (mlc_len >= MIN_MLC_LEN)
+			if (mlc_len >= MIN_MLC_LEN && memb->sz >= MIN_MLC_READ)
 				gem_insert(i, start, end, mlc_len, memb->sz, chr_st);
 		}
 	}

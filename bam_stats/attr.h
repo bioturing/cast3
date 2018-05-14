@@ -5,6 +5,8 @@
 
 #include "htslib/sam.h"
 
+#define VERSION			"1.3"
+
 /* Sam flag */
 #define FLAG_PAIR		0x001	/* Read has its mate */
 #define FLAG_PROPER 		0x002	/* Read and its mate are proper pair */
@@ -23,8 +25,9 @@
 #define N_MLC			100
 #define N_ISIZE 		1000
 
-#define MLC_LIMIT_DIS_2READ	100000
-#define MIN_MLC_LEN		4000
+#define DIS_THRES_DEFAULT	50000
+#define MIN_MLC_LEN		1000
+#define MIN_MLC_READ		4
 #define MLC_20KB		20000
 #define MLC_100KB		100000
 #define MLC_BIN_PLOT		4000
@@ -50,8 +53,13 @@ struct set_mole_t {
 	int sz;
 };
 
-struct arr_u64_t {
-	uint64_t *val;
+struct pair_t {
+	int first;
+	int second;
+};
+
+struct arr_pair_t {
+	struct pair_t *val;
 	int sz;
 };
 

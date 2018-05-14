@@ -8,6 +8,7 @@
 
 struct prog_args {
 	int nthread;
+	int distance_thres;
 	char *bam_path;
 	char *genome_path;
 	char *outdir;
@@ -28,7 +29,7 @@ static inline int cmpfunc_int(const void *a, const void *b)
 
 static inline int cmpfunc_mlc(const void *a, const void *b)
 {
-	return -((*(uint64_t *)a >> SHIFT32) - (*(uint64_t *)b >> SHIFT32));
+	return -((*(struct pair_t *)a).second - (*(struct pair_t *)b).second);
 }
 
 static void merge_to_genome(struct summary_t *chr_st)
@@ -66,26 +67,26 @@ static int get_median_isize(struct summary_t *p)
 static void output_result(struct bam_inf_t *bam_inf)
 {
 	genome_st.cover[0] -= sum_nt_amb;
-	char path[MAX_DIR_LEN];
+	char path[BUFSZ];
 	FILE *fi_sum, *fi_cplot, *fi_mplot, *fi_mlc;
 
 	sprintf(path, "%s/summary.inf", args.outdir);
 	if (!(fi_sum = fopen(path, "w")))
-		__perror("Could not open summary.inf");
+		__PERROR("Could not open summary.inf");
 	sprintf(path, "%s/cover_plot.tsv", args.outdir);
 	if (!(fi_cplot = fopen(path, "w")))
-		__perror("Could not open cover_plot.tsv");
+		__PERROR("Could not open cover_plot.tsv");
 	sprintf(path, "%s/mlc_plot.tsv", args.outdir);
 	if (!(fi_mplot = fopen(path, "w")))
-		__perror("Could not open mlc_plot.tsv");
+		__PERROR("Could not open mlc_plot.tsv");
 	sprintf(path, "%s/molecule.tsv", args.outdir);
 	if (!(fi_mlc = fopen(path, "w")))
-		__perror("Could not open molecule.tsv");
+		__PERROR("Could not open molecule.tsv");
 
 	int i, j, total_gem_detected = 0;
 	int64_t total_dna_20kb = 0, total_dna_100kb = 0;
 	int64_t total_mlc_len = 0, total_mlc_cnt = 0;
-	struct arr_u64_t mlc = (struct arr_u64_t){.val = NULL, .sz = 0};
+	struct arr_pair_t mlc = (struct arr_pair_t){.val = NULL, .sz = 0};
 	int64_t mlc_plot[N_MLC];
 	memset(mlc_plot, 0, N_MLC * sizeof(int64_t));
 
@@ -119,7 +120,7 @@ static void output_result(struct bam_inf_t *bam_inf)
 			if ((mlc.sz & (mlc.sz - 1)) == 0)
 				mlc.val = realloc(mlc.val, (mlc.sz << 1) *
 						  sizeof(uint64_t));
-			mlc.val[mlc.sz - 1] = (1ULL * cnt << SHIFT32) + len;
+			mlc.val[mlc.sz - 1] = (struct pair_t){.first = cnt, .second = len};
 
 			int bin_id = len / MLC_BIN_PLOT;
 			if (bin_id < N_MLC)
@@ -133,7 +134,7 @@ static void output_result(struct bam_inf_t *bam_inf)
 	int64_t sum = 0;
 	int n50_read_per_mlc = -1;
 	for (i = sum = 0; i < mlc.sz; ++i) {
-		int cnt = (int)(mlc.val[i] >> SHIFT32);
+		int cnt = mlc.val[i].first;
 		sum += cnt;
 		if (sum >= (total_mlc_cnt >> 1)) {
 			n50_read_per_mlc = cnt;
@@ -199,9 +200,9 @@ struct bam_inf_t init_bam_reader(char *file_name)
 	/* Open bam file and the index file */
 	samFile *bam_f;
 	if (!(bam_f = sam_open(file_name, "r")))
-		__perror("Could not open BAM file");
+		__PERROR("Could not open BAM file");
 	if (!(bam_inf.bam_i = sam_index_load(bam_f, file_name)))
-		__error("BAM file must be indexed!");
+		__ERROR("BAM file must be indexed!\n");
 
 	/* Init the header */
 	bam_inf.b_hdr = sam_hdr_read(bam_f);
@@ -273,7 +274,7 @@ static void read_bam_target(hts_itr_t *iter, samFile *bam_f,
 	 		}
 	 	}
 
-		if (!b->core.n_cigar) {
+		if (b->core.n_cigar == 0) {
 			++chr_st->total_unmap;
 			continue;
 		}
@@ -325,14 +326,14 @@ static void *process(void *data)
 
 		double local_time = realtime();
 		if (bam_inf->b_hdr->target_len[id] != chr_len[id])
-			__ferror("Genome file is not correct!");
+			__ERROR("Genome file is not correct!\n");
 		struct summary_t chr_st;
 		memset(&chr_st, 0, sizeof(struct summary_t));
 		chr_st.chr_id = id;
 		iter = sam_itr_queryi(bam_inf->bam_i, id, 1,
 				      bam_inf->b_hdr->target_len[id]);
 		read_bam_target(iter, bam_f, &chr_st);
-		__verbose("Done chr %s in %.2fs.\n",
+		__VERBOSE("Done chr %s in %.2fs.\n",
 			  bam_inf->b_hdr->target_name[id],
 			  realtime() - local_time);
 	} while (1);
@@ -343,11 +344,7 @@ static void *process(void *data)
 static void read_bam(struct bam_inf_t *bam_inf)
 {
 	old_time = realtime();
-	__verbose("Get bam stats ... \n");
-
-	/* init data */
-	mlc_init(bam_inf->b_hdr->n_targets);
-	coverage_init(bam_inf->b_hdr->n_targets, chr_len);
+	__VERBOSE("Get bam stats ... \n");
 
 	/* Get unmapped read, tid == -1 */
 	read_bam_unmapped(bam_inf);
@@ -365,10 +362,10 @@ static void read_bam(struct bam_inf_t *bam_inf)
 	for (i = 0; i < args.nthread; ++i)
 		pthread_join(pthr[i], NULL);
 
-	__verbose("Done all in %.2fs.\n", realtime() - old_time);
+	__VERBOSE("Done all in %.2fs.\n", realtime() - old_time);
 
 	/* output result */
-	__verbose("Output result ... \n");
+	__VERBOSE("Output result ... \n");
 	output_result(bam_inf);
 
 	/* free memory allocate */
@@ -378,12 +375,12 @@ static void read_bam(struct bam_inf_t *bam_inf)
 	pthread_mutex_destroy(&lock_id);
 	pthread_mutex_destroy(&lock_merge);
 
-	__verbose("Finish!\n");
+	__VERBOSE("Finish!\n");
 }
 
 static void load_genome(char *file_path)
 {
-	__verbose("Loading genome ... \n");
+	__VERBOSE("Loading genome ... \n");
 	old_time = realtime();
 
 	int i, id, c;
@@ -391,17 +388,17 @@ static void load_genome(char *file_path)
 	char *s = NULL;
 	FILE *fi;
 	if (!(fi = fopen(file_path, "r")))
-		__perror("Could not open genome file");
+		__PERROR("Could not open genome file!\n");
 
 	c = getc(fi);
 	if (c != '>')
-		__error("Genome file is not fasta format!\n");
+		__ERROR("Genome file is not fasta format!\n");
 	ungetc(c, fi);
 
 	chr_len = NULL;
 	id = -1;
 	while (getline(&s, &len, fi) != EOF) {
-		// __verbose("%s", s);
+		// __VERBOSE("%s", s);
 		if (s[0] == '>') {
 			++id;
 			chr_len = realloc(chr_len, (id + 1) * sizeof(int));
@@ -420,24 +417,31 @@ static void load_genome(char *file_path)
 	sum_nt_amb -= sum_nt4;
 
 	fclose(fi);
-	__verbose("Done in %.2fs.\n", realtime() - old_time);
+	__VERBOSE("Done in %.2fs.\n", realtime() - old_time);
 }
 
 static void print_usage()
 {
-	__verbose("./bstats <option> genome_file bam_file\n");
-	__verbose("\n");
-	__verbose("input bam_file must be indexed\n");
-	__verbose("\n");
-	__verbose("option:\n");
-	__verbose("  -t INT           number of threads [1]\n");
-	__verbose("  -o STR           output directory [./]\n");
-	__verbose("\n");
-	__verbose("this tool will generate some file:\n");
-	__verbose("  summary.inf      summary of bam file\n");
-	__verbose("  mlc_plot.tsv          molecule length histogram\n");
-	__verbose("  cover_plot.tsv        coverage histogram\n");
-	__verbose("  molecule.tsv     all molecule info\n");
+	__VERBOSE("./bstats <option> genome_file bam_file\n");
+	__VERBOSE("\n");
+	__VERBOSE("Version: %s\n", VERSION);
+	__VERBOSE("\n");
+	__VERBOSE("Input bam_file must be indexed and must has BX tag.\n");
+	__VERBOSE("Molecules were detected by cluster read into group.\n");
+	__VERBOSE("In each group, distance between two consecutive reads lower than -d.\n");
+	__VERBOSE("Filter molecule has length < 1000 or number of reads on it < 4.\n");
+	__VERBOSE("\n");
+	__VERBOSE("Option:\n");
+	__VERBOSE("  -t INT                number of threads [1]\n");
+	__VERBOSE("  -o STR                output directory [./]\n");
+	__VERBOSE("  -d STR                threshold for distance between two consecutive\n");
+	__VERBOSE("                        reads in a molecule [50000]\n");
+	__VERBOSE("\n");
+	__VERBOSE("This tool will generate some file:\n");
+	__VERBOSE("  summary.inf           summary of bam file\n");
+	__VERBOSE("  mlc_plot.tsv          molecule length histogram\n");
+	__VERBOSE("  cover_plot.tsv        coverage histogram\n");
+	__VERBOSE("  molecule.tsv          all molecule info\n");
 }
 
 static void get_args(int argc, char *argv[])
@@ -445,15 +449,19 @@ static void get_args(int argc, char *argv[])
 	int c;
 	args.outdir = "./";
 	args.nthread = 1;
+	args.distance_thres = DIS_THRES_DEFAULT;
 
-	while ((c = getopt(argc, argv, "sht:o:")) >= 0) {
+	while ((c = getopt(argc, argv, "sht:o:d:")) >= 0) {
 		switch (c) {
 		case 't':
 			args.nthread = atoi(optarg);
 			break;
 		case 'o':
 			args.outdir = optarg;
-			break; 
+			break;
+		case 'd':
+			args.distance_thres = atoi(optarg);
+			break;
 		case 'h':
 			print_usage();
 			exit(0);
@@ -472,7 +480,7 @@ static void get_args(int argc, char *argv[])
 	}
 
 	args.nthread = __min(args.nthread, 16);
-	make_outdir(args.outdir);
+	make_dir(args.outdir);
 }
 
 int main(int argc, char *argv[])
@@ -480,6 +488,8 @@ int main(int argc, char *argv[])
 	get_args(argc, argv);
 	load_genome(args.genome_path);
 	struct bam_inf_t bam_inf = init_bam_reader(args.bam_path);
+	mlc_init(bam_inf.b_hdr->n_targets, args.distance_thres);
+	coverage_init(bam_inf.b_hdr->n_targets, chr_len);
 	read_bam(&bam_inf);
 
 	return 0;

@@ -1,11 +1,11 @@
 #include "duplicate.h"
 #include "read_stats.h"
 #include "molecule.h"
+#include "utils.h"
 
 static inline int cmpfunc_alg(const void *a, const void *b)
 {
-	return ((struct alg_inf_t *)a)->bxid -
-	       ((struct alg_inf_t *)b)->bxid;
+	return ((struct alg_inf_t *)a)->bxid - ((struct alg_inf_t *)b)->bxid;
 }
 
 static void assign_alg(bam1_t *b, int bxid, struct alg_inf_t *p)

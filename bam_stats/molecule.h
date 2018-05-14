@@ -6,7 +6,7 @@
 
 #include "attr.h"
 
-void mlc_init(int n_chr);
+void mlc_init(int n_chr, int threshold);
 
 void mlc_destroy(int n_chr);
 

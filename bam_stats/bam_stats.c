@@ -29,7 +29,7 @@ static inline int cmpfunc_int(const void *a, const void *b)
 
 static inline int cmpfunc_mlc(const void *a, const void *b)
 {
-	return -((*(struct pair_t *)a).second - (*(struct pair_t *)b).second);
+	return -((*(struct pair_t *)a).first - (*(struct pair_t *)b).first);
 }
 
 static void merge_to_genome(struct summary_t *chr_st)

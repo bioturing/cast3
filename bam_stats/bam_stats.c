@@ -85,7 +85,7 @@ static void output_result(struct bam_inf_t *bam_inf)
 
 	int i, j, total_gem_detected = 0;
 	int64_t total_dna_20kb = 0, total_dna_100kb = 0;
-	int64_t total_mlc_len = 0, total_mlc_cnt = 0;
+	int64_t total_mlc_len = 0, total_mlc_cnt = 0, n_mlc = 0;
 	struct arr_pair_t mlc = (struct arr_pair_t){.val = NULL, .sz = 0};
 	int64_t mlc_plot[N_MLC];
 	memset(mlc_plot, 0, N_MLC * sizeof(int64_t));
@@ -98,6 +98,7 @@ static void output_result(struct bam_inf_t *bam_inf)
 			continue;
 		}
 		++total_gem_detected;
+		n_mlc += genome_st.gem[i].sz;
 
 		for (j = 0; j < genome_st.gem[i].sz; ++j) {
 			struct mole_t *cur_mlc = genome_st.gem[i].mlc + j;
@@ -177,6 +178,8 @@ static void output_result(struct bam_inf_t *bam_inf)
 		1.0 * total_dna_100kb / total_mlc_len * 100);
 	fprintf(fi_sum, "Mean Molecule Length:\t%ld\n",
 		total_mlc_len / mlc.sz);
+	fprintf(fi_sum, "Mean Molecule per GEM:\t%ld\n",
+		n_mlc / total_gem_detected);
 	fprintf(fi_sum, "N50 Reads per Molecule (LPM):\t%d\n", n50_read_per_mlc);
 
 	/* output data into 2 plot */
